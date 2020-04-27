@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-import pyplan_core.cubepy
-from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
-from pyplan_core.classes.common.filterChoices import filterChoices
-from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
-from pyplan_core.cubepy.cube import kindToString, safemax, safemean, safemin, safesum
+import cubepy
+from classes.evaluators.BaseEvaluator import BaseEvaluator
+from classes.common.filterChoices import filterChoices
+from classes.common.indexValuesReq import IndexValuesReq
+from cubepy.cube import kindToString, safemax, safemean, safemin, safesum
 
 
 class CubepyEvaluator(BaseEvaluator):
@@ -551,7 +551,7 @@ class CubepyEvaluator(BaseEvaluator):
         return res
 
     def previewNode(self, nodeDic, nodeId):
-        from pyplan_engine.classes.Helpers import Helpers
+        from classes.Helpers import Helpers
         from sys import getsizeof
         res = {
             "resultType": str(type(nodeDic[nodeId].result)),

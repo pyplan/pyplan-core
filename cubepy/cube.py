@@ -2,12 +2,12 @@ import numpy as np
 import math
 from sys import getsizeof
 
-from pyplan_core.cubepy.axes import make_axes
-from pyplan_core.cubepy.axis import Axis
-from pyplan_core.cubepy.exceptions import AxisAlignError
-from pyplan_core.cubepy.index import Index
-from pyplan_core.cubepy.utils import make_axis_collection, is_axis, is_indexed, align_arrays, broadcast_array, unique_axes_from_cubes
-from pyplan_core.cubepy.exceptions import InvalidAxisLengthError
+from cubepy.axes import make_axes
+from cubepy.axis import Axis
+from cubepy.exceptions import AxisAlignError
+from cubepy.index import Index
+from cubepy.utils import make_axis_collection, is_axis, is_indexed, align_arrays, broadcast_array, unique_axes_from_cubes
+from cubepy.exceptions import InvalidAxisLengthError
 
 class Cube(object):
     """Wrapper around numpy.ndarray with named and labelled axes. The API aims to be as similar to ndarray API as

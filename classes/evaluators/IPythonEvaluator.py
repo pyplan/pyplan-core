@@ -1,6 +1,6 @@
 import json
 
-from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
+from classes.evaluators.BaseEvaluator import BaseEvaluator
 
 
 class IPythonEvaluator(BaseEvaluator):

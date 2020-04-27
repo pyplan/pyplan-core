@@ -1,10 +1,10 @@
 #functions for use as:  import cubepy.factory as cp
 
 import numpy as np
-import pyplan_core.cubepy
+import cubepy
 import numbers
 from sys import platform
-from pyplan_core.cubepy.cube import kindToString, apply_op
+from cubepy.cube import kindToString, apply_op
 import os
 import csv
 

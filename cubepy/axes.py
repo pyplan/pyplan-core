@@ -1,7 +1,7 @@
 import numpy as np
 
-from pyplan_core.cubepy.exceptions import NonUniqueDimNamesError
-from pyplan_core.cubepy.utils import is_axis
+from cubepy.exceptions import NonUniqueDimNamesError
+from cubepy.utils import is_axis
 
 
 class Axes(object):

@@ -8,14 +8,14 @@ from types import CodeType
 
 import numpy as np
 
-from pyplan_core.classes.evaluators.Evaluator import Evaluator
-from pyplan_core.classes.dynamics.BaseDynamic import BaseDynamic
-from pyplan_core.classes.dynamics.FactoryDynamic import FactoryDynamic
-from pyplan_core.cubepy.Helpers import Helpers
-from pyplan_core.classes.IOEngine import IOEngine
-from pyplan_core.classes.NodeInfo import NodeInfo
-from pyplan_core.classes.PyplanFunctions import Selector
-from pyplan_core.classes.XHelpers import XHelpers
+from classes.evaluators.Evaluator import Evaluator
+from classes.dynamics.BaseDynamic import BaseDynamic
+from classes.dynamics.FactoryDynamic import FactoryDynamic
+from cubepy.Helpers import Helpers
+from classes.IOEngine import IOEngine
+from classes.NodeInfo import NodeInfo
+from classes.PyplanFunctions import Selector
+from classes.XHelpers import XHelpers
 
 
 class BaseNode(object):
@@ -569,7 +569,7 @@ class BaseNode(object):
                     # check for cubepy for fix new lib import
                     if ", cubepy," in finalDef:
                         finalDef = finalDef.replace(
-                            ", cubepy,", ", pyplan_core.cubepy as cubepy,")
+                            ", cubepy,", ", cubepy as cubepy,")
                 else:
                     customImports = self.model.getCustomImports()
                     if customImports:

@@ -1,4 +1,4 @@
-from pyplan_core.classes.wizards.BaseWizard import BaseWizard
+from classes.wizards.BaseWizard import BaseWizard
 import pandas as pd
 import jsonpickle
 import re

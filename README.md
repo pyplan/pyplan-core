@@ -7,7 +7,6 @@
 
 You can install Pyplan Core in your computer following the instructions below. 
 
-
 ```bash
 # Install
 pip install pyplan_core

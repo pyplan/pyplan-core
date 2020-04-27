@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import inspect
 import jsonpickle
-import pyplan_core.cubepy
-from pyplan_core.classes.common.filterChoices import filterChoices
-from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
+import cubepy
+from classes.common.filterChoices import filterChoices
+from classes.common.indexValuesReq import IndexValuesReq
 
 
 class BaseEvaluator(object):

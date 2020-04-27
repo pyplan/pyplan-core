@@ -7,8 +7,8 @@ import numpy as np
 import numpydoc
 import pandas as pd
 
-import pyplan_core.cubepy
-import pyplan_core.cubepy.factory as cpf
+import cubepy
+import cubepy.factory as cpf
 
 
 class Helpers(object):

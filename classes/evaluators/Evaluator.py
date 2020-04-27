@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
-import pyplan_core.cubepy
-from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
-from pyplan_core.classes.evaluators.CubepyEvaluator import CubepyEvaluator
-from pyplan_core.classes.evaluators.NumpyEvaluator import NumpyEvaluator
-from pyplan_core.classes.evaluators.PandasEvaluator import PandasEvaluator
-from pyplan_core.classes.evaluators.XArrayEvaluator import XArrayEvaluator
-from pyplan_core.classes.XHelpers import XIndex
+import cubepy
+from classes.evaluators.BaseEvaluator import BaseEvaluator
+from classes.evaluators.CubepyEvaluator import CubepyEvaluator
+from classes.evaluators.NumpyEvaluator import NumpyEvaluator
+from classes.evaluators.PandasEvaluator import PandasEvaluator
+from classes.evaluators.XArrayEvaluator import XArrayEvaluator
+from classes.XHelpers import XIndex
 import inspect
 
 
@@ -25,20 +25,20 @@ class Evaluator(object):
             elif Evaluator.isXArray(result):
                 return XArrayEvaluator()
             elif Evaluator.isMatplotlib(result):
-                from pyplan_core.classes.evaluators.MatplotlibEvaluator import MatplotlibEvaluator
+                from classes.evaluators.MatplotlibEvaluator import MatplotlibEvaluator
                 return MatplotlibEvaluator()
             elif Evaluator.isNumpy(result):
                 return NumpyEvaluator()
             elif Evaluator.isBokeh(result):
-                from pyplan_core.classes.evaluators.BokehEvaluator import BokehEvaluator
+                from classes.evaluators.BokehEvaluator import BokehEvaluator
                 return BokehEvaluator()
             elif Evaluator.isPlotly(result):
-                from pyplan_core.classes.evaluators.PlotlyEvaluator import PlotlyEvaluator
+                from classes.evaluators.PlotlyEvaluator import PlotlyEvaluator
                 return PlotlyEvaluator()
             elif Evaluator.isCubepy(result):
                 return CubepyEvaluator()
             elif Evaluator.isIPython(result):
-                from pyplan_core.classes.evaluators.IPythonEvaluator import IPythonEvaluator
+                from classes.evaluators.IPythonEvaluator import IPythonEvaluator
                 return IPythonEvaluator()
             else:
                 return BaseEvaluator()
@@ -82,7 +82,7 @@ class Evaluator(object):
 
     @staticmethod
     def isCubepy(result):
-        return isinstance(result, pyplan_core.cubepy.Cube) or isinstance(result, pyplan_core.cubepy.Index)
+        return isinstance(result, cubepy.Cube) or isinstance(result, cubepy.Index)
 
     @staticmethod
     def isIPython(result):
