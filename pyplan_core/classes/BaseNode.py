@@ -569,7 +569,7 @@ class BaseNode(object):
                     # check for cubepy for fix new lib import
                     if ", cubepy," in finalDef:
                         finalDef = finalDef.replace(
-                            ", cubepy,", ", cubepy as cubepy,")
+                            ", cubepy,", ", pyplan_core.cubepy as cubepy,")
                 else:
                     customImports = self.model.getCustomImports()
                     if customImports:
