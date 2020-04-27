@@ -1,6 +1,6 @@
-from pyplan_core.classes.dynamics.CubepyDynamic import CubepyDynamic
-from pyplan_core.classes.dynamics.XArrayDynamic import XArrayDynamic
-from pyplan_core.classes.dynamics.PureXArrayDynamic import PureXArrayDynamic
+from classes.dynamics.CubepyDynamic import CubepyDynamic
+from classes.dynamics.XArrayDynamic import XArrayDynamic
+from classes.dynamics.PureXArrayDynamic import PureXArrayDynamic
 
 
 class FactoryDynamic(object):

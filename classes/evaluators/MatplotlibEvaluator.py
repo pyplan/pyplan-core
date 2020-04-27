@@ -1,4 +1,4 @@
-from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
+from classes.evaluators.BaseEvaluator import BaseEvaluator
 import json
 from io import BytesIO
 import base64

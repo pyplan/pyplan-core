@@ -1,6 +1,6 @@
 import numpy as np
 
-from pyplan_core.cubepy.axis import Axis
+from cubepy.axis import Axis
 
 
 class Index(Axis):

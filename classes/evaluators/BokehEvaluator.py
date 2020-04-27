@@ -1,6 +1,6 @@
 import json
 
-from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
+from classes.evaluators.BaseEvaluator import BaseEvaluator
 from bokeh.embed import json_item
 from bokeh.plotting import Figure
 from bokeh.layouts import LayoutDOM, layout

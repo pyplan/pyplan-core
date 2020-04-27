@@ -6,10 +6,10 @@ import numpy as np
 import numpydoc
 import pandas as pd
 
-import pyplan_core.cubepy
-from pyplan_core.classes.BaseNode import BaseNode
-from pyplan_core.classes.XHelpers import XHelpers
-from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
+import cubepy
+from classes.BaseNode import BaseNode
+from classes.XHelpers import XHelpers
+from classes.common.indexValuesReq import IndexValuesReq
 
 
 class Intellisense(object):

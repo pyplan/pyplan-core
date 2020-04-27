@@ -16,13 +16,13 @@ import numpy
 import pandas
 import xarray as xr
 
-import pyplan_core.cubepy
-from pyplan_core.classes.BaseNode import BaseNode
-from pyplan_core.classes.Intellisense import Intellisense
-from pyplan_core.classes.IOModule import IOModule
-from pyplan_core.classes.PyplanFunctions import Selector
-from pyplan_core.classes.evaluators.Evaluator import Evaluator
-from pyplan_core.classes.wizards import (CalculatedField, DataframeGroupby,
+import cubepy
+from classes.BaseNode import BaseNode
+from classes.Intellisense import Intellisense
+from classes.IOModule import IOModule
+from classes.PyplanFunctions import Selector
+from classes.evaluators.Evaluator import Evaluator
+from classes.wizards import (CalculatedField, DataframeGroupby,
                                            DataframeIndex, SelectColumns,
                                            SelectRows, sourcecsv)
 
@@ -33,7 +33,7 @@ class Model(object):
     DEFAULT_IMPORTS = {
         'np': numpy,
         'pd': pandas,
-        'cubepy': pyplan_core.cubepy,
+        'cubepy': cubepy,
         'xr': xr
     }
 

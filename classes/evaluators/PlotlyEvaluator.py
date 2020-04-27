@@ -1,5 +1,5 @@
 import json
-from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
+from classes.evaluators.BaseEvaluator import BaseEvaluator
 import plotly.io as pio
 from plotly.graph_objs._figure import Figure
 

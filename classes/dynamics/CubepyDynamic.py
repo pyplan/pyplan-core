@@ -1,7 +1,7 @@
-from pyplan_core.classes.dynamics.BaseDynamic import BaseDynamic
-from pyplan_core.cubepy.Helpers import Helpers
+from classes.dynamics.BaseDynamic import BaseDynamic
+from cubepy.Helpers import Helpers
 import numpy as np
-import pyplan_core.cubepy
+import cubepy
 import datetime as dt
 import re
 

@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
-from pyplan_core.classes.evaluators.PandasEvaluator import PandasEvaluator
-from pyplan_core.classes.XHelpers import XHelpers, XIndex
-from pyplan_core.classes.common.filterChoices import filterChoices
-from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
+from classes.evaluators.BaseEvaluator import BaseEvaluator
+from classes.evaluators.PandasEvaluator import PandasEvaluator
+from classes.XHelpers import XHelpers, XIndex
+from classes.common.filterChoices import filterChoices
+from classes.common.indexValuesReq import IndexValuesReq
 
 
 class XArrayEvaluator(BaseEvaluator):
