@@ -11,3 +11,18 @@ You can install Pyplan Core in your computer following the instructions below.
 # Install
 pip install pyplan_core
 ```
+
+
+```python
+# Use
+
+from pyplan_core.pyplan import Pyplan
+
+pyplan = Pyplan()
+
+pyplan.openModel("PyplanCoreSample.ppl")
+value = pyplan.getResult("total_of_cases")
+print(value)
+
+pyplan.closeModel() 
+```
