@@ -1297,7 +1297,7 @@ class Model(object):
 
     def createSymlinks(self, path):
 
-        if os.getenv('PYPLAN_IDE', '0') != '1' and os.getenv('ENGINE_MODE', '') != 'fixed':
+        if os.getenv('PYPLAN_IDE', '0') != '1' and not os.getenv('ENGINE_MODE', '') in ['fixed','local']:
 
             # Add user or public path to system paths
             pos = path.index('/', path.index('/', path.index('/',

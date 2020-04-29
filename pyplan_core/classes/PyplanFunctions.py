@@ -74,6 +74,16 @@ class Selector(object):
                     res[k] = getattr(self, k)
         return res
 
+    def isSameValue(self, value):
+        if self.multiselect and isinstance(self.selected, list) and isinstance(value, list):
+            l1 = self.selected.copy()
+            l2 = value.copy()
+            l1.sort()
+            l2.sort()
+            return l1 == l2
+        else:
+            return self.selected == value
+
     def generateDefinition(self, definition, value):
 
         if self.multiselect:
@@ -88,7 +98,7 @@ class Selector(object):
         reg = r'(?:[^\]\[,]+|\[[^\]\[]+\])'
         groups = re.findall(reg, definition)
         if len(groups) > 2:
-            if not str(groups[-1]) in ["False)", "True)"]:
+            if not str(groups[-1]) in ["False)", "True)","multiselect=False)", "multiselect=True)"]:
                 groups.append("False)")
             newDef = ""
             for nn in range(len(groups)-2):
