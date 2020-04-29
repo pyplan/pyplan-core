@@ -1,4 +1,5 @@
 from pyplan_core.classes.Model import Model
+import pandas as pd
 from multiprocessing import Lock
 import os
 
@@ -62,7 +63,17 @@ class Pyplan(object):
         if os.path.getmtime(self.currentFilename) != self.lastUpdated:
             self.openModel(self.currentFilename)
 
-    
+    def getNodeList(self,module_id=None):
+        """Return dataframe with the nodes in Pyplan model"""
+        arr = []
+        if not module_id:
+            module_id = self.model.modelNode.identifier
+        for node in self.model.findNodes("moduleId",module_id):
+            if not node.nodeClass in ["text","alias","inputnode"] and not node.identifier in ["pyplan_library"]: 
+                arr.append([node.identifier, node.title, node.nodeClass, node.moduleId])
+            
+        df = pd.DataFrame(arr, columns=["node_id","title","class","module_id"])
+        return df
 
     def _lock_acquire(self):
         if not self.lock is None:

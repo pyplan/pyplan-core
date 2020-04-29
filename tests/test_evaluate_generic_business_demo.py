@@ -11,10 +11,14 @@ pyplan = Pyplan()
 
 
 def test_openModel():
-    #global pyplan
     filename = os.path.dirname(os.path.abspath(__file__)) + "/models/Generic Business Demo/Generic Business Demo.ppl"
     pyplan.openModel(filename)
     assert True , "Error on open Model" 
+
+def test_listnodes():
+    node_list = pyplan.getNodeList()
+    print(node_list)
+    assert len(node_list)>0, "Error on list nodes"
 
 def test_evaluateNode():
     value = pyplan.getResult("check_sum_all")
