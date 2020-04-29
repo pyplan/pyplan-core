@@ -75,6 +75,16 @@ class Pyplan(object):
         df = pd.DataFrame(arr, columns=["node_id","title","class","module_id"])
         return df
 
+    def getNode(self, node_id):
+        """Return Node from Pyplan model"""
+        try:
+            self._lock_acquire()
+            if self.model.existNode(node_id):
+                return self.model.getNode(node_id)
+            raise ValueError(f"The node '{node_id}' was not found in the model")
+        finally:
+            self._lock_release()
+
     def _lock_acquire(self):
         if not self.lock is None:
             return self.lock.acquire()

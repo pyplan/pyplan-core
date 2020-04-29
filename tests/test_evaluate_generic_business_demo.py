@@ -20,6 +20,10 @@ def test_listnodes():
     print(node_list)
     assert len(node_list)>0, "Error on list nodes"
 
+def test_getNode():
+    node = pyplan.getNode("check_sum_all")
+    assert not node is None, "Error on getnode"    
+
 def test_evaluateNode():
     value = pyplan.getResult("check_sum_all")
     print(value)

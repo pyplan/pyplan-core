@@ -22,7 +22,8 @@ from pyplan_core.pyplan import Pyplan
 
 pyplan = Pyplan()
 
-pyplan.openModel("PyplanCoreSample.ppl")
+model_filename = pyplan.sample_models.use_of_pyplan_core()
+pyplan.openModel(model_filename)
 value = pyplan.getResult("total_of_cases")
 print(value)
 
