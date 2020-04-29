@@ -54,7 +54,8 @@ class Pyplan(object):
             self._lock_acquire()
             if self.model.existNode(node_id):
                 self.model.setSelectorValue(node_id, value)
-            raise ValueError(f"The node '{node_id}' was not found in the model")
+            else:
+                raise ValueError(f"The node '{node_id}' was not found in the model")
         finally:
             self._lock_release()
 

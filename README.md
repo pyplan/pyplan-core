@@ -14,6 +14,13 @@ You can install Pyplan Core in your computer following the instructions below.
 ```bash
 pip install pyplan_core
 ```
+or
+
+```bash
+conda config --append channels pyplan
+conda config --append channels conda-forge
+conda install pyplan-core
+```
 
 You can use Pyplan Core in your computer following the instructions below. 
 
