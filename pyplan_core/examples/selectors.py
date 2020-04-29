@@ -1,4 +1,3 @@
-import os
 from pyplan_core.pyplan import Pyplan
 
 pyplan = Pyplan()

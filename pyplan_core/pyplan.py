@@ -41,7 +41,9 @@ class Pyplan(object):
         """Return result of the node"""
         try:
             self._lock_acquire()
-            return self.model.getNode(node_id).result
+            if self.model.existNode(node_id):
+                return self.model.getNode(node_id).result
+            raise ValueError(f"The node '{node_id}' was not found in the model")
         finally:
             self._lock_release()
 
@@ -49,7 +51,9 @@ class Pyplan(object):
         """Set value of a selector node"""
         try:
             self._lock_acquire()
-            self.model.setSelectorValue(node_id, value)
+            if self.model.existNode(node_id):
+                self.model.setSelectorValue(node_id, value)
+            raise ValueError(f"The node '{node_id}' was not found in the model")
         finally:
             self._lock_release()
 
