@@ -7,7 +7,7 @@ It provides methods to open a model, set selectors values and get results of nod
 This library expands the possibilities of using Pyplan models embedded in your own application.
 Models still have to be created using the Pyplan Graphical IDE that you can download and use for free at www.pyplan.org
 
-## Installing and running Pyplan
+## Installing and running Pyplan Core
 
 You can install Pyplan Core in your computer following the instructions below. 
 
