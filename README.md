@@ -12,14 +12,12 @@ Models still have to be created using the Pyplan Graphical IDE that you can down
 You can install Pyplan Core in your computer following the instructions below. 
 
 ```bash
-# Install
 pip install pyplan_core
 ```
 
+You can use Pyplan Core in your computer following the instructions below. 
 
 ```python
-# Use
-
 from pyplan_core.pyplan import Pyplan
 
 pyplan = Pyplan()
