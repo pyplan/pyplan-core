@@ -38,5 +38,4 @@ print(value)
 pyplan.closeModel() 
 ```
 
-You can see the model used in this example [by clicking here](https://my.pyplan.org/#shared/49df9b20-39b4-4466-b10c-6920e6990d50){:target="_blank"}
-
+You can see the model used in this example <a href="https://my.pyplan.org/#shared/49df9b20-39b4-4466-b10c-6920e6990d50" target="_blank">by clicking here</a>
