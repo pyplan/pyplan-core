@@ -7,7 +7,7 @@ from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
 from pyplan_core.cubepy.cube import kindToString
-import pyplan_core.cubepy as cubepy
+from pyplan_core import cubepy 
 
 
 class PandasEvaluator(BaseEvaluator):

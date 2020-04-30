@@ -7,7 +7,7 @@ import numpy as np
 import numpydoc
 import pandas as pd
 
-import pyplan_core.cubepy as cubepy
+from pyplan_core import cubepy 
 import pyplan_core.cubepy.factory as cpf
 
 

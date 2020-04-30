@@ -1,7 +1,7 @@
 #functions for use as:  import pyplan_core.cubepy.factory as cp
 
 import numpy as np
-import pyplan_core.cubepy as cubepy
+from pyplan_core import cubepy 
 import numbers
 from sys import platform
 from pyplan_core.cubepy.cube import kindToString, apply_op

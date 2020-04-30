@@ -2,7 +2,7 @@
 Do not import these in order to avoid circular imports.
 """
 
-import pyplan_core.cubepy as cubepy
+from pyplan_core import cubepy 
 import pyplan_core.cubepy.axis
 import pyplan_core.cubepy.index
 from pyplan_core.cubepy.exceptions import AxisAlignError

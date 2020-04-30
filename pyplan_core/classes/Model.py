@@ -16,7 +16,7 @@ import numpy
 import pandas
 import xarray as xr
 
-import pyplan_core.cubepy as cubepy
+from pyplan_core import cubepy 
 from pyplan_core.classes.BaseNode import BaseNode
 from pyplan_core.classes.Intellisense import Intellisense
 from pyplan_core.classes.IOModule import IOModule
