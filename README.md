@@ -40,3 +40,10 @@ pyplan.closeModel()
 
 You can see the model used in this example [by clicking here](https://my.pyplan.org/#shared/49df9b20-39b4-4466-b10c-6920e6990d50)
 
+
+## Examples of use of pyplan-core in jupyter notebook:
+
+[simple.ipynb](https://colab.research.google.com/drive/1Q6pqpWs8oFvbLfq_43bNF76g294_v7XS)
+
+
+[selectors.ipynb](https://colab.research.google.com/drive/1HE556nO6ABIb2g0ux9AB2c6Fq1DsAHgg)
