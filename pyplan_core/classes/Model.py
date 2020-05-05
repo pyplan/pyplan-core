@@ -16,16 +16,15 @@ import numpy
 import pandas
 import xarray as xr
 
-from pyplan_core import cubepy 
+from pyplan_core import cubepy
 from pyplan_core.classes.BaseNode import BaseNode
 from pyplan_core.classes.Intellisense import Intellisense
 from pyplan_core.classes.IOModule import IOModule
-from pyplan_core.classes.PyplanFunctions import Selector
+from pyplan_core.classes.PyplanFunctions import Selector, PyplanFunctions
 from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.wizards import (CalculatedField, DataframeGroupby,
-                                           DataframeIndex, SelectColumns,
-                                           SelectRows, sourcecsv)
-
+                                         DataframeIndex, SelectColumns,
+                                         SelectRows, sourcecsv)
 
 
 class Model(object):
@@ -37,7 +36,7 @@ class Model(object):
         'xr': xr
     }
 
-    def __init__(self,WSClass=None):
+    def __init__(self, WSClass=None):
         self._nodeDic = {}
         self._nodeClassDic = dict()
         self._modelProp = {}
@@ -54,7 +53,7 @@ class Model(object):
         self.company_code = None
         self.session_key = None
         self.ws = None
-        self.debugMode=None
+        self.debugMode = None
         self.WS = WSClass
 
     # Props
@@ -120,7 +119,7 @@ class Model(object):
         self._nodeClassDic = dict()
         self._wizard = None
 
-    def setNodeClassDic(self,nodeClassDic):
+    def setNodeClassDic(self, nodeClassDic):
         """Set nodeclass dic used for create new nodes"""
         self._nodeClassDic = nodeClassDic
 
@@ -129,7 +128,8 @@ class Model(object):
         self.company_code = company_code
         self.session_key = session_key
         if self.WS:
-            self.ws = self.WS(company_code=company_code, session_key=session_key)
+            self.ws = self.WS(company_code=company_code,
+                              session_key=session_key)
 
     def createNode(self, identifier=None, nodeClass=None, moduleId=None, x=None, y=None, toObj=False, originalId=None):
         """Create new node"""
@@ -243,15 +243,14 @@ class Model(object):
     def previewNode(self, nodeId, debugMode=""):
         """Perform preview of a node"""
         try:
-                    
 
             result = None
             if self.existNode(nodeId):
                 if debugMode:
-                    self.debugMode=debugMode
-                    if debugMode=="node":
+                    self.debugMode = debugMode
+                    if debugMode == "node":
                         self.nodeDic[nodeId].silentInvalidate()
-                    elif debugMode=="model":
+                    elif debugMode == "model":
                         for node_key in self.nodeDic:
                             self.nodeDic[node_key].silentInvalidate()
 
@@ -273,7 +272,7 @@ class Model(object):
         finally:
             if self.debugMode and self.ws:
                 self.ws.sendDebugInfo("endPreview", "", "endPreview")
-            self.debugMode=None
+            self.debugMode = None
 
     def getCubeValues(self, query):
         """Evaluate node. Used for pivotgrid"""
@@ -405,7 +404,7 @@ class Model(object):
 
             if not selector.isSameValue(value):
                 definition = node.definition
-                new_definition = selector.generateDefinition(definition,value)
+                new_definition = selector.generateDefinition(definition, value)
                 if new_definition:
                     node.definition = new_definition
 
@@ -1203,19 +1202,24 @@ class Model(object):
         self.createDefaultNodes()
 
         # auto import pyplan_xarray_extensions
-        try:
-            _ppxarray = ''
-            _ppxarray = os.path.join(os.path.dirname(os.path.realpath(
-                __file__)), 'extras', 'pyplan_xarray_extensions.ppl')
+        # try:
+        #     _ppxarray = ''
+        #     _ppxarray = os.path.join(os.path.dirname(os.path.realpath(
+        #         __file__)), 'extras', 'pyplan_xarray_extensions.ppl')
 
-            if os.path.isfile(_ppxarray):
-                self.importModule('pyplan_library', _ppxarray, '2')
+        #     if os.path.isfile(_ppxarray):
+        #         self.importModule('pyplan_library', _ppxarray, '2')
 
-        except Exception as ex:
-            raise ex
-        finally:
-            opened = None
-            self._isLoadingModel = False
+        # except Exception as ex:
+        #     raise ex
+        # finally:
+        #     opened = None
+        #     self._isLoadingModel = False
+
+        [self.nodeDic[nod].generateIO() for nod in self.nodeDic]
+
+        opened = None
+        self._isLoadingModel = False
 
         # check models library
         self.ensureModelLibraries()
@@ -1247,6 +1251,11 @@ class Model(object):
 
         self._customImports = Model.DEFAULT_IMPORTS.copy()
 
+        # add pyplan funcions
+        self._customImports["pp"] = PyplanFunctions(self)
+        #for backguard compatibility
+        self._customImports["selector"] = self._customImports["pp"].selector
+
         # support old 'default imports' node
         if self.existNode('imports'):
             import_node = self.getNode('imports')
@@ -1261,7 +1270,8 @@ class Model(object):
         systemPathNode = self.createNode(
             identifier='current_path', moduleId=self.modelNode.identifier)
 
-        path = os.path.abspath(fileName[0:fileName.rfind(os.path.sep)])+ os.path.sep
+        path = os.path.abspath(
+            fileName[0:fileName.rfind(os.path.sep)]) + os.path.sep
         if self.isLinux():
             path = fileName[:fileName.rfind('/')] + '/'
             self.createSymlinks(path)
@@ -1297,7 +1307,7 @@ class Model(object):
 
     def createSymlinks(self, path):
 
-        if os.getenv('PYPLAN_IDE', '0') != '1' and not os.getenv('ENGINE_MODE', '') in ['fixed','local']:
+        if os.getenv('PYPLAN_IDE', '0') != '1' and not os.getenv('ENGINE_MODE', '') in ['fixed', 'local']:
 
             # Add user or public path to system paths
             pos = path.index('/', path.index('/', path.index('/',
@@ -1469,7 +1479,6 @@ class Model(object):
         else:
             return ''
 
-
     def callWizard(self, param):
         """ Start and call wizard toolbar """
         obj = jsonpickle.decode(param)
@@ -1484,19 +1493,15 @@ class Model(object):
 
         return toCall(self, params)
 
-        # try:
-        # except Exception as ex:
-        #     res = dict(error=str(ex))
-        #     return jsonpickle.encode(res)
-
-    def createNewModel(self, modelFile, modelName):
+    def createNewModel(self, modelFile=None, modelName=None):
         self.release()
         self._modelProp = {}
         self._isLoadingModel = True
         self.initialize(modelName)
         self.createSystemNodes(modelFile)
         self._isLoadingModel = False
-        self.saveModel(modelFile)
+        if modelFile:
+            self.saveModel(modelFile)
         return True
 
     def _getWizzard(self, key):
@@ -1545,7 +1550,7 @@ class Model(object):
             '/sys/fs/cgroup/memory/memory.usage_in_bytes') - _read_cache()) / 1024/1024/1024
 
         # get cpu usage
-        
+
         if onlyMemory:
             return {
                 'totalMemory': mem_limit,
