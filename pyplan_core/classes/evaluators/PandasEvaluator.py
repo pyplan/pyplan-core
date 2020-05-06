@@ -440,7 +440,6 @@ class PandasEvaluator(BaseEvaluator):
         return []
 
     def previewNode(self, nodeDic, nodeId):
-        from pyplan_core.classes.Helpers import Helpers
         from sys import getsizeof
         res = {
             "resultType": str(type(nodeDic[nodeId].result)),
