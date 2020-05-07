@@ -484,7 +484,7 @@ class BaseNode(object):
                     (lazy_end_time - lazy_start_time).total_seconds()
 
     def calculate(self, extraParams=None):
-        """Calculate result of node"""
+        """Calculate result of the node"""
 
         if not self.isCalc or self.nodeClass == "button" or self.nodeClass == "formnode":
             nodeIsCircular = self.isCircular()
@@ -558,8 +558,7 @@ class BaseNode(object):
                 localRes = {
                     "getNode": self._model.getNode,
                     "getCalcNode": self._getCalcNode,
-                    "cp": Helpers(self),
-                    "pp": XHelpers(self)
+                    "cp": Helpers(self)
                 }
                 if not extraParams is None:
                     for keyParam in extraParams:
@@ -619,7 +618,6 @@ class BaseNode(object):
                     self.evaluationVersion = self.model.evaluationVersion
                 finally:
                     localRes["cp"].release()
-                    localRes["pp"].release()
                     localRes = None
                     self.sendEndCalcNode(from_circular_evaluator)
         else:
