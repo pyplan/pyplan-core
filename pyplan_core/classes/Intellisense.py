@@ -6,9 +6,9 @@ import numpy as np
 import numpydoc
 import pandas as pd
 
-import pyplan_core.cubepy
+from pyplan_core import cubepy
 from pyplan_core.classes.BaseNode import BaseNode
-from pyplan_core.classes.XHelpers import XHelpers
+from pyplan_core.classes.PyplanFunctions  import PyplanFunctions
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
 
 
@@ -115,7 +115,7 @@ class Intellisense(object):
     # search if no operator was found
     def searchDefault(self, model, filterOptions, onlyClass, moduleId, searchText, prefix, extraText):
         res = []
-        for k, node in model.nodeDic.items():
+        for _, node in model.nodeDic.items():
             if not searchText is None and not node is None:
                 if (
                     node.identifier.lower().find(searchText) >= 0 or
@@ -137,7 +137,7 @@ class Intellisense(object):
                                             inspect.signature(_fn))
                                         toAppend["description"] = str(
                                             inspect.getdoc(_fn))
-                                    except Exception as ex:
+                                    except:
                                         params = node.definition[node.definition.find(
                                             "(")+1:node.definition.find(")")]
                                         toAppend["params"] = params
@@ -157,8 +157,8 @@ class Intellisense(object):
                     res = self.describe(searchText, prefix,
                                         extraText, operator, type(node.result))
         else:
-            localRes = localRes = {
-                "pp": XHelpers,
+            localRes = {
+                "pp": PyplanFunctions(model),
             }
             customImports = model.getCustomImports()
             if customImports:
@@ -176,6 +176,9 @@ class Intellisense(object):
                       prefix + " antes del .")
                 e = exc_info()[0]
                 print("<p>Error: %s</p>" % e)
+            finally:
+                localRes["pp"].release()
+                del localRes["pp"]
 
         return res
 
@@ -232,7 +235,7 @@ class Intellisense(object):
                     # check if index
                     if node.nodeClass == "index":
                         if filterOptions["fillDetail"]:
-                            indexValues = model.getIndexValues(None, IndexValuesReq({'node_id': node.identifier}))
+                            indexValues = model.getIndexValues(None, IndexValuesReq(node_id=node.identifier))
                             if indexValues:
                                 for value in indexValues:
                                     finalValue = str(value)
