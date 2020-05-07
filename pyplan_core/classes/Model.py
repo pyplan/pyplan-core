@@ -1200,22 +1200,6 @@ class Model(object):
                 node = None
 
         self.createDefaultNodes()
-
-        # auto import pyplan_xarray_extensions
-        # try:
-        #     _ppxarray = ''
-        #     _ppxarray = os.path.join(os.path.dirname(os.path.realpath(
-        #         __file__)), 'extras', 'pyplan_xarray_extensions.ppl')
-
-        #     if os.path.isfile(_ppxarray):
-        #         self.importModule('pyplan_library', _ppxarray, '2')
-
-        # except Exception as ex:
-        #     raise ex
-        # finally:
-        #     opened = None
-        #     self._isLoadingModel = False
-
         [self.nodeDic[nod].generateIO() for nod in self.nodeDic]
 
         opened = None
