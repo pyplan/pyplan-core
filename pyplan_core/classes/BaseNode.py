@@ -15,7 +15,6 @@ from pyplan_core.cubepy.Helpers import Helpers
 from pyplan_core.classes.IOEngine import IOEngine
 from pyplan_core.classes.NodeInfo import NodeInfo
 from pyplan_core.classes.PyplanFunctions import Selector
-from pyplan_core.classes.XHelpers import XHelpers
 
 
 class BaseNode(object):

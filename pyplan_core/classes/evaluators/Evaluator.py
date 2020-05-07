@@ -7,7 +7,6 @@ from pyplan_core.classes.evaluators.CubepyEvaluator import CubepyEvaluator
 from pyplan_core.classes.evaluators.NumpyEvaluator import NumpyEvaluator
 from pyplan_core.classes.evaluators.PandasEvaluator import PandasEvaluator
 from pyplan_core.classes.evaluators.XArrayEvaluator import XArrayEvaluator
-from pyplan_core.classes.XHelpers import XIndex
 import inspect
 
 
@@ -49,7 +48,7 @@ class Evaluator(object):
 
     @staticmethod
     def isXArray(result):
-        return isinstance(result, xr.DataArray) or isinstance(result, XIndex)
+        return isinstance(result, xr.DataArray)
 
     @staticmethod
     def isMatplotlib(result):

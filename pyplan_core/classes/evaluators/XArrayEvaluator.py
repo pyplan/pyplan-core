@@ -7,7 +7,6 @@ import xarray as xr
 
 from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.evaluators.PandasEvaluator import PandasEvaluator
-from pyplan_core.classes.XHelpers import XHelpers, XIndex
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
 
@@ -342,8 +341,6 @@ class XArrayEvaluator(BaseEvaluator):
             node = nodeDic[data.index_id]
             if result is None:
                 result = node.result
-            if isinstance(result, XIndex):
-                res = result.values.tolist()
             elif isinstance(result, np.ndarray):
                 res = self.checkDateFormat(result).tolist()
             else:
@@ -364,7 +361,7 @@ class XArrayEvaluator(BaseEvaluator):
 
         if (not indexId is None) & (indexId in nodeDic):
             node = nodeDic[indexId]
-            if isinstance(node.result, XIndex) or isinstance(node.result, pd.Index):
+            if isinstance(node.result, pd.Index):
                 if str(node.result.values.dtype) in numerics:
                     res = "N"
             elif isinstance(node.result, np.ndarray):
@@ -673,15 +670,17 @@ class XArrayEvaluator(BaseEvaluator):
         return result
 
     def geoUnclusterData(self, result, nodeDic, nodeId, rowIndex, attIndex, latField="latitude", lngField="longitude", geoField="geoField", labelField="labelField", sizeField="sizeField", colorField="colorField", iconField="iconField"):
-        _tmp_for_geo = XIndex('tmp_for_geo', [
-                              latField, lngField, geoField, labelField, sizeField, colorField, iconField])
+        _tmp_for_geo = pd.Index([latField, lngField, geoField, labelField, sizeField, colorField, iconField], name="tmp_for_geo")
         attIndex = attIndex.split(".")[0]
         rowIndex = rowIndex.split(".")[0]
         _idx = nodeDic[attIndex].result
         rowIndexObj = nodeDic[rowIndex].result
-        #mapCube = result.sel({_idx.name:_tmp_for_geo}).transpose([rowIndex,"tmp_for_geo"]).values
-        mapCube = XHelpers.changeIndex(None, result, _idx, _tmp_for_geo).transpose(
-            *[rowIndex, "tmp_for_geo"]).values
+
+        _temp = result.reindex({_idx.name: _tmp_for_geo.values})
+        _temp[_tmp_for_geo.name] = _temp[_idx.name]
+        _temp = _temp.swap_dims({_idx.name: _tmp_for_geo.name}).drop(_idx.name)
+        
+        mapCube = _temp.transpose(*[rowIndex, "tmp_for_geo"]).values
         res = dict()
         points = []
         pos = 0
