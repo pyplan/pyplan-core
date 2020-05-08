@@ -7,6 +7,7 @@ import numpydoc
 import pandas as pd
 
 from pyplan_core import cubepy
+from pyplan_core.cubepy.Helpers import Helpers #old cubepy support
 from pyplan_core.classes.BaseNode import BaseNode
 from pyplan_core.classes.PyplanFunctions  import PyplanFunctions
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
@@ -159,6 +160,7 @@ class Intellisense(object):
         else:
             localRes = {
                 "pp": PyplanFunctions(model),
+                "cp": Helpers(None)
             }
             customImports = model.getCustomImports()
             if customImports:
@@ -177,8 +179,8 @@ class Intellisense(object):
                 e = exc_info()[0]
                 print("<p>Error: %s</p>" % e)
             finally:
-                localRes["pp"].release()
                 del localRes["pp"]
+                del localRes["cp"]
 
         return res
 
