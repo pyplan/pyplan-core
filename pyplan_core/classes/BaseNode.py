@@ -562,17 +562,11 @@ class BaseNode(object):
                 if not extraParams is None:
                     for keyParam in extraParams:
                         localRes[keyParam] = extraParams[keyParam]
-
-                if self.identifier == "imports":
-                    # check for cubepy for fix new lib import
-                    if ", cubepy," in finalDef:
-                        finalDef = finalDef.replace(
-                            ", cubepy,", ", pyplan_core.cubepy as cubepy,")
-                else:
-                    customImports = self.model.getCustomImports()
-                    if customImports:
-                        for keyParam in customImports:
-                            localRes[keyParam] = customImports[keyParam]
+                
+                customImports = self.model.getCustomImports()
+                if customImports:
+                    for keyParam in customImports:
+                        localRes[keyParam] = customImports[keyParam]
 
                 try:
                     # execute node definition in supervised context

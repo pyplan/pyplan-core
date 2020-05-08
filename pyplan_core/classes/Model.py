@@ -1208,6 +1208,9 @@ class Model(object):
         # check models library
         self.ensureModelLibraries()
 
+        # apply backward compatibility
+        self.applyBackwardCompatibility()
+
         # evaluate nodes on start
         try:
             for key in self.nodeDic:
@@ -1237,7 +1240,7 @@ class Model(object):
 
         # add pyplan funcions
         self._customImports["pp"] = PyplanFunctions(self)
-        #for backguard compatibility
+        #for backward compatibility
         self._customImports["selector"] = self._customImports["pp"].selector
 
         # support old 'default imports' node
@@ -1333,6 +1336,19 @@ class Model(object):
             pyplan_library_node.color = '#9fc5e8'
             pyplan_library_node.nodeInfo['showInputs'] = 0
             pyplan_library_node.nodeInfo['showOutputs'] = 0
+
+    def applyBackwardCompatibility(self):
+        # update old selector definition
+        if self.existNode("selector"):
+            node = self.getNode("selector")
+            if node.nodeClass=="function" and "from pyplan_engine.classes.PyplanFunctions import Selector" in node.definition:
+                node.definition = "result = pp.selector"
+
+        #check for cubepy in imports node
+        if self.existNode("imports"):
+            node = self.getNode("imports")
+            if ", cubepy," in node.definition:
+                node.definition = node.definition.replace(", cubepy,", ", pyplan_core.cubepy as cubepy,")
 
     def isLinux(self):
         if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
