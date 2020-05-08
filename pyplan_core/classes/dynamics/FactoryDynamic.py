@@ -1,5 +1,4 @@
 from pyplan_core.classes.dynamics.CubepyDynamic import CubepyDynamic
-from pyplan_core.classes.dynamics.XArrayDynamic import XArrayDynamic
 from pyplan_core.classes.dynamics.PureXArrayDynamic import PureXArrayDynamic
 
 
@@ -18,8 +17,6 @@ class FactoryDynamic(object):
                 _def = node.model.getNode(nodeId).definition
                 if "cp.dynamic(" in _def:
                     return CubepyDynamic
-                elif "pp.dynamic(" in _def:
-                    return XArrayDynamic
                 elif "dynamic(" in _def:
                     return PureXArrayDynamic
 

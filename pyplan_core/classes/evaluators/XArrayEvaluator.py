@@ -507,7 +507,7 @@ class XArrayEvaluator(BaseEvaluator):
                 import re
                 deff = re.sub(
                     '[\s+]', '', str(node.definition).strip(' \t\n\r')).lower()
-                if (deff.startswith("result=pp.dataarray(") or deff.startswith("result=pp.cube(") or deff.startswith("result=xr.dataarray(") or deff.startswith("result=create_dataarray(")):
+                if (deff.startswith("result=pp.dataarray(") or deff.startswith("result=pp.cube(") or deff.startswith("result=xr.dataarray(") or deff.startswith("result=create_dataarray(") or deff.startswith("result=pp.create_dataarray(")):
                     res = "1"
 
         return res
@@ -670,7 +670,8 @@ class XArrayEvaluator(BaseEvaluator):
         return result
 
     def geoUnclusterData(self, result, nodeDic, nodeId, rowIndex, attIndex, latField="latitude", lngField="longitude", geoField="geoField", labelField="labelField", sizeField="sizeField", colorField="colorField", iconField="iconField"):
-        _tmp_for_geo = pd.Index([latField, lngField, geoField, labelField, sizeField, colorField, iconField], name="tmp_for_geo")
+        _tmp_for_geo = pd.Index([latField, lngField, geoField, labelField,
+                                 sizeField, colorField, iconField], name="tmp_for_geo")
         attIndex = attIndex.split(".")[0]
         rowIndex = rowIndex.split(".")[0]
         _idx = nodeDic[attIndex].result
@@ -679,7 +680,7 @@ class XArrayEvaluator(BaseEvaluator):
         _temp = result.reindex({_idx.name: _tmp_for_geo.values})
         _temp[_tmp_for_geo.name] = _temp[_idx.name]
         _temp = _temp.swap_dims({_idx.name: _tmp_for_geo.name}).drop(_idx.name)
-        
+
         mapCube = _temp.transpose(*[rowIndex, "tmp_for_geo"]).values
         res = dict()
         points = []

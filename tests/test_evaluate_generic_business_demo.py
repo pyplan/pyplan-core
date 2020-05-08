@@ -32,3 +32,20 @@ def test_evaluateNode():
 def test_closeModel():    
     pyplan.closeModel()
     assert True , "Error on release  Engine"
+
+
+
+def test_openModel_bypass_pp_functions():
+    filename = os.path.dirname(os.path.abspath(__file__)) + "/models/Generic Business Demo/Generic Business Demo pp.ppl"
+    pyplan.openModel(filename)
+    assert True , "Error on open Model" 
+
+def test_evaluateNode_bypass_pp_functions():
+    value = pyplan.getResult("check_sum_all")
+    print(value)
+    assert value == 4397867.429125782, "Error on evaluate node. The node result is " + str(value)
+
+def test_closeModel_bypass_pp_functions():
+    pyplan.closeModel()
+    assert True , "Error on release  Engine"    
+

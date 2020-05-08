@@ -247,7 +247,7 @@ class PureXArrayDynamic(BaseDynamic):
             if not dynamicIndex.name in _list:
                 _list.append(dynamicIndex.name)
             _dims = ','.join(_list)
-            _def = f"result = create_dataarray(0.,[{_dims}])"
+            _def = f"result = pp.create_dataarray(0.,[{_dims}])"
 
             """
             _data = np.full(nodeCube.shape, 0. )
@@ -258,7 +258,7 @@ class PureXArrayDynamic(BaseDynamic):
             """
             return _def
         else:
-            return f"result = create_dataarray(0.,[{dynamicIndex.name}])"
+            return f"result = pp.create_dataarray(0.,[{dynamicIndex.name}])"
             """
             _data = np.full(dynamicIndex.shape, 0. )
             np.set_printoptions(threshold = np.prod(_data.shape))
@@ -280,7 +280,8 @@ class PureXArrayDynamic(BaseDynamic):
             if node.model.existNode(_nodeId):
                 _def = node.model.getNode(_nodeId).definition
                 if "dynamic(" in _def:
-                    _startPos = _def.find("dynamic(") + 8
+
+                    _startPos = (_def.find("pp.dynamic(") + 11) if "pp.dynamic" in _def else (_def.find("dynamic(") + 8 )
                     _endPos = _def.find(")", _startPos)
 
                     # dynamicVars = _def[_startPos:_endPos] # cc,time,-1
@@ -323,12 +324,19 @@ class PureXArrayDynamic(BaseDynamic):
         startIndex = -1
         finalIndex = -1
         toReplace = ''
-        initialIndex = stringDef.find('dynamic(')
+        initialIndex = stringDef.find('pp.dynamic(')
         if initialIndex != -1:
             startIndex = initialIndex
-            initialIndex = initialIndex + len('dynamic(')
+            initialIndex = initialIndex + len('pp.dynamic(')
             if len(stringDef) > initialIndex:
                 finalIndex = stringDef[initialIndex+1:].find(')')
+        else:
+            initialIndex = stringDef.find('dynamic(')
+            if initialIndex != -1:
+                startIndex = initialIndex
+                initialIndex = initialIndex + len('dynamic(')
+                if len(stringDef) > initialIndex:
+                    finalIndex = stringDef[initialIndex+1:].find(')')
 
         if initialIndex != -1 and finalIndex != -1:
             toReplace = stringDef[startIndex:initialIndex + finalIndex + 2]
