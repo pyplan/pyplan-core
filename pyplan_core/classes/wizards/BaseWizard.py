@@ -1,6 +1,6 @@
 import json
 import autopep8
-from pandas import MultiIndex
+from pandas import MultiIndex, DataFrame
 
 
 class BaseWizard(object):
@@ -15,18 +15,26 @@ class BaseWizard(object):
         nodeId = params["nodeId"]
         if model.existNode(nodeId):
             nodeResult = model.getNode(nodeId).result
+            if isinstance(nodeResult, DataFrame):
+                sample_df = nodeResult.sample(min(len(nodeResult),10000)).reset_index()
+                count_by_columns = None
+                if "includeColumnList" in params and params["includeColumnList"]:
+                    only_string = sample_df.select_dtypes(include="object")
+                    serie_count = only_string.nunique()
+                    serie_count = serie_count[serie_count<500]
+                    if len(serie_count)>0:
+                        count_by_columns = serie_count
 
-            # append indexes
-            for nn, idx in enumerate(nodeResult.index.names):
-                if not idx is None:
-                    res.append(dict(field=idx, type="index", dtype=self.kindToString(
-                        nodeResult.index.levels[nn].values.dtype.kind if isinstance(nodeResult.index, MultiIndex) else nodeResult.index.values.dtype.kind)))
-
-            # append columns
-            for nn, cols in enumerate(list(nodeResult.columns)):
-                if not cols is None:
-                    res.append(dict(field=cols, type="column",  dtype=self.kindToString(
-                        nodeResult.dtypes[nn].kind)))
+                # append columns
+                for nn, col in enumerate(list(sample_df.columns)):
+                    if not col is None:
+                        item = dict(field=col, type="index" if col in nodeResult.index.names else "column",  dtype=self.kindToString(
+                            sample_df.dtypes[nn].kind))
+                        if not count_by_columns is None and col in count_by_columns:
+                            item["values"] = sample_df[col].unique().tolist()
+                            item["values"].sort()
+                            
+                        res.append(item)
 
         return res
 

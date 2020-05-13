@@ -47,18 +47,8 @@ class Wizard(BaseWizard):
             column_name = agg_item["field"]
             calc = agg_item["calc"]
             value_colum = column_name
-            new_node_title = base_node.title if base_node.title else base_node.identifier
-
-            if calc=="count":
-                new_def += f"df = {previous_step}.copy()\n"
-                new_def += f"df['count'] = 1\n"
-                agg_dic["count"] = "sum"
-                value_colum = "count"
-                previous_step = "df"
-                new_node_title = f"Count of {new_node_title}"
-            else:
-                agg_dic[column_name] = calc
-                new_node_title = f"{calc.capitalize()} {column_name} of {new_node_title}"
+            new_node_title = f"{calc.capitalize()} of {column_name}"
+            agg_dic[column_name] = calc
 
             #create dataarray node
             new_node_id = model._removeDiacritics(new_node_title)

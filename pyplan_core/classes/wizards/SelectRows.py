@@ -26,11 +26,14 @@ class Wizard(BaseWizard):
             currentDef = model.getNode(nodeId).definition
             newDef = currentDef
             conditions = ""
-            for filterItem in params["filters"]:
-                conditions = conditions + \
-                    self.generateFilter(nodeResult, filterItem) + " & "
-            if conditions != "":
-                conditions = conditions[:-3]
+            for nn,filterItem in enumerate(params["filters"]):
+                if nn>0:
+                    operator = "&"
+                    if "logical_operator" in filterItem and filterItem["logical_operator"]:
+                        operator = filterItem["logical_operator"]
+                    conditions += f" {operator} "
+
+                conditions += self.generateFilter(nodeResult, filterItem)           
 
             if conditions != "":
                 newDef = self.getLastDefinition(currentDef)
