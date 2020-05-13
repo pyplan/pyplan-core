@@ -24,7 +24,7 @@ from pyplan_core.classes.PyplanFunctions import Selector, PyplanFunctions
 from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.wizards import (CalculatedField, DataframeGroupby,
                                          DataframeIndex, SelectColumns,
-                                         SelectRows, sourcecsv)
+                                         SelectRows, sourcecsv, DataarrayFromPandas)
 
 
 class Model(object):
@@ -203,6 +203,36 @@ class Model(object):
                 else:
                     nChance = 0
                 nChance -= 1
+        return res
+
+    def getAPlace(self, moduleId, x, y, w, h, deltaX=110):
+        """ Get a place for insert a node """
+        res = dict(x=x, y=y)
+        options = 100
+        l1x = int(x)
+        l1y = int(y)
+        r1x = int(x) + int(w)
+        r1y = int(y) + int(h)
+        endy = int(y) + int(h)
+        while options > 0:
+            options -= 1
+            found = False
+            for node in self.findNodes('moduleId', moduleId):
+                if node.nodeClass!="text":
+                    l2x = int(node.x)
+                    l2y = int(node.y)
+                    r2x = int(node.x) + int(node.w)
+                    r2y = int(node.y) + int(node.h)
+                    if not (l1x > r2x or l2x > r1x or l1y > r2y or l2y > r1y):
+                        found = True
+                        break
+            if found:
+                l1x = l1x + deltaX
+                r1x = r1x + deltaX
+            else:
+                res["x"] = l1x
+                res["y"] = l1y
+                break
         return res
 
     def isNodeInScenario(self, nodeId):
@@ -1240,7 +1270,7 @@ class Model(object):
 
         # add pyplan funcions
         self._customImports["pp"] = PyplanFunctions(self)
-        #for backward compatibility
+        # for backward compatibility
         self._customImports["selector"] = self._customImports["pp"].selector
 
         # support old 'default imports' node
@@ -1341,14 +1371,15 @@ class Model(object):
         # update old selector definition
         if self.existNode("selector"):
             node = self.getNode("selector")
-            if node.nodeClass=="function" and "from pyplan_engine.classes.PyplanFunctions import Selector" in node.definition:
+            if node.nodeClass == "function" and "from pyplan_engine.classes.PyplanFunctions import Selector" in node.definition:
                 node.definition = "result = pp.selector"
 
-        #check for cubepy in imports node
+        # check for cubepy in imports node
         if self.existNode("imports"):
             node = self.getNode("imports")
             if ", cubepy," in node.definition:
-                node.definition = node.definition.replace(", cubepy,", ", pyplan_core.cubepy as cubepy,")
+                node.definition = node.definition.replace(
+                    ", cubepy,", ", pyplan_core.cubepy as cubepy,")
 
     def isLinux(self):
         if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
@@ -1518,6 +1549,8 @@ class Model(object):
             return DataframeIndex.Wizard()
         elif key == 'dataframegroupby':
             return DataframeGroupby.Wizard()
+        elif key == 'dataarrayfrompandas':
+            return DataarrayFromPandas.Wizard()
 
     def getSystemResources(self, onlyMemory=False):
         """Return current system resources"""
