@@ -35,7 +35,7 @@ class Wizard(BaseWizard):
                     if model.existNode(new_index_id):
                         new_index_id = model.getNextIdentifier(new_index_id)
 
-                    node_position = model.getAPlace(base_node.moduleId, base_node.x + 150, base_node.y - 70, 96,48 )
+                    node_position = model.getAPlace(base_node.moduleId, int(base_node.x) + 150, int(base_node.y) - 70, 96,48 )
                     new_index_node = model.createNode(new_index_id, nodeClass="index", moduleId=base_node.moduleId, x=node_position["x"], y=node_position["y"])
                     new_index_node.title = column_name
                     new_index_node.definition = f"result = pd.Index({nodeId}.reset_index()['{column_name}'].unique().tolist())"
@@ -55,7 +55,7 @@ class Wizard(BaseWizard):
             if model.existNode(new_node_id):
                 new_node_id = model.getNextIdentifier(new_node_id)
                 
-            node_position = model.getAPlace(base_node.moduleId, base_node.x + 150,base_node.y,96,48)
+            node_position = model.getAPlace(base_node.moduleId, int(base_node.x) + 150, int(base_node.y),96,48)
             new_node = model.createNode(new_node_id, nodeClass="variable", moduleId=base_node.moduleId, x=node_position["x"], y=node_position["y"])
             new_node.title = new_node_title
             domain_dic_str = json.dumps(domain_dic).replace("\"_#_","").replace("_#_\"","")
