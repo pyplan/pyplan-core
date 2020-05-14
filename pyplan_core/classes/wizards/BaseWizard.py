@@ -27,7 +27,7 @@ class BaseWizard(object):
 
                 # append columns
                 for nn, col in enumerate(list(sample_df.columns)):
-                    if not col is None:
+                    if not col is None and not (col=="index" and not nodeResult.index is None and nodeResult.index.name is None):
                         item = dict(field=col, type="index" if col in nodeResult.index.names else "column",  dtype=self.kindToString(
                             sample_df.dtypes[nn].kind))
                         if not count_by_columns is None and col in count_by_columns:

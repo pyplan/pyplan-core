@@ -38,7 +38,7 @@ class Wizard(BaseWizard):
                     node_position = model.getAPlace(base_node.moduleId, base_node.x + 150, base_node.y - 70, 96,48 )
                     new_index_node = model.createNode(new_index_id, nodeClass="index", moduleId=base_node.moduleId, x=node_position["x"], y=node_position["y"])
                     new_index_node.title = column_name
-                    new_index_node.definition = f"result = pd.Index({nodeId}['{column_name}'].unique().tolist())"
+                    new_index_node.definition = f"result = pd.Index({nodeId}.reset_index()['{column_name}'].unique().tolist())"
                     index_dic["model_index"] = new_index_node.identifier
                 index_list.append(index_dic["field"])
                 domain_dic[index_dic["field"]] = f"_#_{index_dic['model_index']}_#_"
@@ -61,7 +61,7 @@ class Wizard(BaseWizard):
             domain_dic_str = json.dumps(domain_dic).replace("\"_#_","").replace("_#_\"","")
 
             
-            new_def += f"df = {previous_step}.groupby({json.dumps(index_list)}, as_index=False).agg({agg_dic})\n"
+            new_def += f"df = {previous_step}.reset_index().groupby({json.dumps(index_list)}, as_index=False).agg({agg_dic})\n"
             new_def += f"result = pp.dataarray_from_pandas(df, {domain_dic_str}, '{value_colum}')"
             new_node.definition = new_def
                
