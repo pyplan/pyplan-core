@@ -829,6 +829,7 @@ class BaseNode(object):
             "text": "#FEFEFE",
             "picture": "#FEFEFE",
             "formnode": "#076CBC",
-            "constraint": "#f2e340"
+            "constraint": "#f2e340",
+            "inputtable": "#ffd700"
         }
         return dic[str(nodeClass).lower()] if str(nodeClass).lower() in dic else "#6699FF"

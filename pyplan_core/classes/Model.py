@@ -25,6 +25,7 @@ from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.wizards import (CalculatedField, DataframeGroupby,
                                          DataframeIndex, SelectColumns,
                                          SelectRows, sourcecsv, DataarrayFromPandas)
+from .DefaultNodeFormats import default_formats                                         
 
 
 class Model(object):
@@ -38,7 +39,6 @@ class Model(object):
 
     def __init__(self, WSClass=None):
         self._nodeDic = {}
-        self._nodeClassDic = dict()
         self._modelProp = {}
         self._modelNode = None
         self._isLoadingModel = False
@@ -80,8 +80,9 @@ class Model(object):
         return os.getpid()
 
     def getDefaultNodeFormat(self, nodeClass):
-        if nodeClass in self._nodeClassDic:
-            return self._nodeClassDic[nodeClass]
+        default_formats
+        if nodeClass in default_formats:
+            return default_formats[nodeClass]
         else:
             return None
 
@@ -116,12 +117,8 @@ class Model(object):
             self._modelNode.title = modelName
 
         self._scenarioDic = dict()
-        self._nodeClassDic = dict()
         self._wizard = None
 
-    def setNodeClassDic(self, nodeClassDic):
-        """Set nodeclass dic used for create new nodes"""
-        self._nodeClassDic = nodeClassDic
 
     def connectToWS(self, company_code, session_key):
         # Connect to WS
@@ -452,7 +449,6 @@ class Model(object):
         self._modelProp = {}
         self._modelNode = None
         self._scenarioDic = dict()
-        self._nodeClassDic = dict()
         self._wizard = None
         self._customImports = None
 
