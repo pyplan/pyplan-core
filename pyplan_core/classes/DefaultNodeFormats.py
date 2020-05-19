@@ -105,6 +105,21 @@ default_formats = {
         "w": 376,
         "z": -1
     },
+    "inputtable": {
+        "color": "#ffff4b",
+        "nodeClass": "inputtable",
+        "definition": "result = 0",
+        "nodeInfo": {
+            "fill": 1,
+            "showBorder": 1,
+            "showInputs": 1,
+            "showLabel": 1,
+            "showOutputs": 1,
+            "useNodeFont": 0
+        },
+        "w": 96,
+        "h": 48
+    },
     "sourcecsv": {
         "color": "#d9ead3",
         "nodeClass": "variable",

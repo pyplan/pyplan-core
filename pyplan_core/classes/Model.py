@@ -10,6 +10,7 @@ from shlex import split
 from site import getsitepackages
 from sys import platform
 from time import sleep
+from copy import deepcopy
 
 import jsonpickle
 import numpy
@@ -82,7 +83,7 @@ class Model(object):
     def getDefaultNodeFormat(self, nodeClass):
         default_formats
         if nodeClass in default_formats:
-            return default_formats[nodeClass]
+            return deepcopy(default_formats[nodeClass])
         else:
             return None
 
