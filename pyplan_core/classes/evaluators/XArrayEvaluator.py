@@ -527,7 +527,7 @@ class XArrayEvaluator(BaseEvaluator):
             node.definition = self.generateNodeDefinition(nodeDic, nodeId)
             return "ok"
 
-    def generateNodeDefinition(self, nodeDic, nodeId, forceXArray=False):
+    def generateNodeDefinition(self, nodeDic, nodeId, forceXArray=False, **kargs):
         node = nodeDic[nodeId]
         da = node.result
         """Generate code for cube definition"""
@@ -539,7 +539,13 @@ class XArrayEvaluator(BaseEvaluator):
         if "_input_properties" in node.definition:
             _input_properties =  node.model.evaluate(node.definition.split("# values")[0] + "result = _input_properties")
         else: 
-            _input_properties = {"defaultValue":0.}
+            if self.kindToString(da.values.dtype.kind) == "string" or self.kindToString(da.values.dtype.kind) == "object":
+                _input_properties = {"defaultValue":'""'}
+            else:
+                _input_properties = {"defaultValue":0.}
+
+        if "defaultValue" in kargs:
+            _input_properties["defaultValue"] = kargs["defaultValue"]
 
         coords = []
         for dim in list(da.dims):
@@ -559,7 +565,7 @@ class XArrayEvaluator(BaseEvaluator):
 
         data_deff = f'result = xr.DataArray({data}, coords={str_coords})'
 
-        if self.kindToString(da.values.dtype.kind) == "string" or self.kindToString(da.values.dtype.kind) == "object":
+        if isinstance(_input_properties["defaultValue"],str):
             data_deff += '.astype("O")'
 
         deff = f"# properties\n_input_properties = {_input_properties}\n\n# values\n{data_deff}"
@@ -758,7 +764,7 @@ class XArrayEvaluator(BaseEvaluator):
 
     def copyAsValues(self, result, nodeDic, nodeId):
         """ Copy node as values """
-
+        node = nodeDic[nodeId]
         newDef = ""
         if isinstance(result, float) or isinstance(result, int):
             newDef = "result = " + str(result)
@@ -767,7 +773,14 @@ class XArrayEvaluator(BaseEvaluator):
         else:
             return False
 
-        nodeDic[nodeId].definition = newDef
+        #try new definition
+        temp_res = node.model.evaluate(newDef)
+
+        node.nodeClass="inputtable"
+        nodeFormat = node.model.getDefaultNodeFormat(node.nodeClass)
+        node.fromObj(nodeFormat)
+        node.definition = newDef
+
         return True
 
     def previewNode(self, nodeDic, nodeId):
