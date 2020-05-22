@@ -7,6 +7,8 @@ from sys import exc_info, getsizeof
 from types import CodeType
 
 import numpy as np
+import pandas as pd
+import xarray as xr
 
 from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.dynamics.BaseDynamic import BaseDynamic
@@ -619,6 +621,30 @@ class BaseNode(object):
     def postCalculate(self):
         evaluator = Evaluator.createInstance(self._result)
         evaluator.postCalculate(self, self._result)
+        if self.nodeClass=="inputtable":
+            self.validateInputTable(evaluator)
+
+    def validateInputTable(self,evaluator):
+        """Validate inputs of the inputtable node"""
+        da = self._result
+        if isinstance(da,xr.DataArray):
+            has_changed=False
+            for dim in da.dims:
+                node_index = self.model.getNode(dim)
+                if list(node_index.result.values) != list(da.coords[dim].values): #values of index has changed
+                    has_changed = True
+                    _input_properties=None
+                    if "_input_properties" in self.definition:
+                        _input_properties =  self.model.evaluate(self._definition.split("# values")[0] + "result = _input_properties")
+                    else: 
+                        _input_properties = {"defaultValue":0.}
+                    da = da.reindex({dim: list(node_index.result.values)})
+                    da = da.fillna(_input_properties["defaultValue"])
+
+            if has_changed:
+                self._result = da
+                self._definition = evaluator.generateNodeDefinition(self.model.nodeDic, self.identifier)
+
 
     def parseNames(self, compiledCode):
         """Parse names used in node definition"""
@@ -798,6 +824,7 @@ class BaseNode(object):
             self._model.ws.sendDebugInfo(
                 self.identifier, self.title if self.title else "", "endCalc", self.lastEvaluationTime, resources["usedMemory"], resources["totalMemory"], fromDynamic=fromDynamic)
 
+
     # ***********************************
     # *** CYCLICK EVALUATOR  METHODS  ***
     # ***********************************
@@ -829,6 +856,7 @@ class BaseNode(object):
             "text": "#FEFEFE",
             "picture": "#FEFEFE",
             "formnode": "#076CBC",
-            "constraint": "#f2e340"
+            "constraint": "#f2e340",
+            "inputtable": "#ffd700"
         }
         return dic[str(nodeClass).lower()] if str(nodeClass).lower() in dic else "#6699FF"

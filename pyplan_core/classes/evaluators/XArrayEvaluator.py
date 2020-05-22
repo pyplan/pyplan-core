@@ -501,19 +501,13 @@ class XArrayEvaluator(BaseEvaluator):
         return res
 
     def isTable(self, node):
-        res = "0"
-        if isinstance(node.result, xr.DataArray):
-            if not node.definition is None and node.definition != "":
-                import re
-                deff = re.sub(
-                    '[\s+]', '', str(node.definition).strip(' \t\n\r')).lower()
-                if (deff.startswith("result=pp.dataarray(") or deff.startswith("result=pp.cube(") or deff.startswith("result=xr.dataarray(") or deff.startswith("result=create_dataarray(") or deff.startswith("result=pp.create_dataarray(")):
-                    res = "1"
-
-        return res
+        if isinstance(node.result, xr.DataArray) and node.nodeClass=="inputtable":
+            return "1"
+        return "0"
 
     def setNodeValueChanges(self, nodeDic, nodeId, nodeChanges):
-        if isinstance(nodeDic[nodeId].result, xr.DataArray):
+        node = nodeDic[nodeId]
+        if self.isTable(node):
             for change in nodeChanges["changes"]:
                 newValue = change["definition"]
                 filters = {}
@@ -528,44 +522,56 @@ class XArrayEvaluator(BaseEvaluator):
                 for key in filters:
                     filters[key] = slice(filters[key][0], filters[key][0])
 
-                nodeDic[nodeId].result.loc[filters] = newValue
+                node.result.loc[filters] = newValue
 
-            nodeDic[nodeId].definition = self.generateNodeDefinition(
-                nodeDic, nodeId)
+            node.definition = self.generateNodeDefinition(nodeDic, nodeId)
             return "ok"
 
-    def generateNodeDefinition(self, nodeDic, nodeId, forceXArray=False):
-        array = nodeDic[nodeId].result
+    def generateNodeDefinition(self, nodeDic, nodeId, forceXArray=False, **kargs):
+        node = nodeDic[nodeId]
+        da = node.result
         """Generate code for cube definition"""
-        np.set_printoptions(threshold=np.prod(array.values.shape))
-        data = np.array2string(array.values, separator=",", precision=20, formatter={
+        np.set_printoptions(threshold=np.prod(da.values.shape))
+        data = np.array2string(da.values, separator=",", precision=20, formatter={
                                'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
 
-        indexes = []
-        for dim in list(array.dims):
+        _input_properties=None
+        if "_input_properties" in node.definition:
+            _input_properties =  node.model.evaluate(node.definition.split("# values")[0] + "result = _input_properties")
+        else: 
+            if self.kindToString(da.values.dtype.kind) == "string" or self.kindToString(da.values.dtype.kind) == "object":
+                _input_properties = {"defaultValue":'""'}
+            else:
+                _input_properties = {"defaultValue":0.}
+
+        if "defaultValue" in kargs:
+            _input_properties["defaultValue"] = kargs["defaultValue"]
+
+        coords = []
+        for dim in list(da.dims):
             if dim in nodeDic:
-                indexes.append(dim)
+                coord_data = np.array2string(nodeDic[dim].result.values, separator=",", precision=20, formatter={
+                               'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
+                item_coord = f"({dim}.name ,{coord_data})"
+                coords.append(item_coord)
+
             else:
-                index_values = np.array2string(array[dim].values, separator=",", precision=20, formatter={
+                coord_data = np.array2string(da[dim].values, separator=",", precision=20, formatter={
                                                'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
-                coord = f"pd.Index({index_values},name='{dim}')"
-                indexes.append(coord)
+                item_coord = f"({dim} ,{coord_data})"
+                coords.append(coord)
 
-        indexes = "[" + ",".join(indexes).replace("'", '"') + "]"
+        str_coords = "[" + ",".join(coords).replace("'", '"') + "]"
 
-        if forceXArray or "xr.DataArray" in nodeDic[nodeId].definition or "create_dataarray" in nodeDic[nodeId].definition:
-            if self.kindToString(array.values.dtype.kind) == "string" or self.kindToString(array.values.dtype.kind) == "object":
-                deff = f'result = xr.DataArray({data},{indexes}).astype("O")'
-            else:
-                deff = f'result = xr.DataArray({data},{indexes})'
-        else:
-            if self.kindToString(array.values.dtype.kind) == "string" or self.kindToString(array.values.dtype.kind) == "object":
-                deff = "result = pp.cube(" + indexes + \
-                    "," + data + ", dtype='O')"
-            else:
-                deff = "result = pp.cube(" + indexes + "," + data + ")"
+        data_deff = f'result = xr.DataArray({data}, coords={str_coords})'
+
+        if isinstance(_input_properties["defaultValue"],str):
+            data_deff += '.astype("O")'
+
+        deff = f"# properties\n_input_properties = {_input_properties}\n\n# values\n{data_deff}"
 
         return deff
+
 
     def dumpNodeToFile(self, nodeDic, nodeId, fileName):
         definition = self.generateNodeDefinition(nodeDic, nodeId)
@@ -758,7 +764,7 @@ class XArrayEvaluator(BaseEvaluator):
 
     def copyAsValues(self, result, nodeDic, nodeId):
         """ Copy node as values """
-
+        node = nodeDic[nodeId]
         newDef = ""
         if isinstance(result, float) or isinstance(result, int):
             newDef = "result = " + str(result)
@@ -767,7 +773,14 @@ class XArrayEvaluator(BaseEvaluator):
         else:
             return False
 
-        nodeDic[nodeId].definition = newDef
+        #try new definition
+        temp_res = node.model.evaluate(newDef)
+
+        node.nodeClass="inputtable"
+        nodeFormat = node.model.getDefaultNodeFormat(node.nodeClass)
+        node.fromObj(nodeFormat)
+        node.definition = newDef
+
         return True
 
     def previewNode(self, nodeDic, nodeId):
