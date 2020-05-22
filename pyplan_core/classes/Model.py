@@ -19,10 +19,10 @@ import xarray as xr
 
 from pyplan_core import cubepy
 from pyplan_core.classes.BaseNode import BaseNode
+from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.Intellisense import Intellisense
 from pyplan_core.classes.IOModule import IOModule
-from pyplan_core.classes.PyplanFunctions import Selector, PyplanFunctions
-from pyplan_core.classes.evaluators.Evaluator import Evaluator
+from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
 from pyplan_core.classes.wizards import (CalculatedField, DataframeGroupby,
                                          DataframeIndex, SelectColumns,
                                          SelectRows, sourcecsv, DataarrayFromPandas, InputTable)
@@ -1319,28 +1319,25 @@ class Model(object):
         node.title = 'TaskLog endpoint'
         node.definition = "result = ''"
 
-    def createSymlinks(self, path):
-
+    def createSymlinks(self, fileName):
         if os.getenv('PYPLAN_IDE', '0') != '1' and not os.getenv('ENGINE_MODE', '') in ['fixed', 'local']:
-
             # Add user or public path to system paths
-            pos = path.index('/', path.index('/', path.index('/',
-                                                             path.index('/', path.index('/')+1)+1)+1)+1)
+            path_sep = os.path.sep
+            path_arr = fileName[:fileName.rfind(path_sep)].split(path_sep)
+
+            dest_path = path_sep.join(path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
 
             # Get python folder path
             python_folder = f'python{sys.version[:3]}'
             try:
-                folder_list = os.listdir(
-                    os.path.join(path[:pos], '.venv', 'lib'))
+                folder_list = os.listdir(os.path.join(dest_path, '.venv', 'lib'))
                 python_folder = folder_list[len(folder_list)-1]
             except Exception as ex:
                 pass
 
             # Add user/public library to system paths
-            user_lib_path = os.path.join(
-                path[:pos], '.venv', 'lib', python_folder, 'site-packages')
-            venv_path = os.path.join(
-                '/venv', 'lib', 'python3.7', 'site-packages')
+            user_lib_path = os.path.join(dest_path, '.venv', 'lib', python_folder, 'site-packages')
+            venv_path = os.path.join('/venv', 'lib', 'python3.7', 'site-packages')
 
             if not os.path.isdir(user_lib_path):
                 os.makedirs(user_lib_path, exist_ok=True)
