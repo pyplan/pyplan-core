@@ -501,7 +501,7 @@ class XArrayEvaluator(BaseEvaluator):
         return res
 
     def isTable(self, node):
-        if isinstance(node.result, xr.DataArray) and node.nodeClass=="inputtable":
+        if isinstance(node.result, xr.DataArray) and node.nodeClass == "inputtable":
             return "1"
         return "0"
 
@@ -535,14 +535,17 @@ class XArrayEvaluator(BaseEvaluator):
         data = np.array2string(da.values, separator=",", precision=20, formatter={
                                'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
 
-        _input_properties=None
+        _input_properties = None
         if "_input_properties" in node.definition:
-            _input_properties =  node.model.evaluate(node.definition.split("# values")[0] + "result = _input_properties")
-        else: 
+            _input_properties = node.model.evaluate(node.definition.split("# values")[
+                                                    0] + "result = _input_properties")
+        else:
             if self.kindToString(da.values.dtype.kind) == "string" or self.kindToString(da.values.dtype.kind) == "object":
-                _input_properties = {"defaultValue":'""'}
+                _input_properties = {"defaultValue": ""}
+            elif np.issubdtype(da.values.dtype, np.integer):
+                _input_properties = {"defaultValue": 0}
             else:
-                _input_properties = {"defaultValue":0.}
+                _input_properties = {"defaultValue": 0.}
 
         if "defaultValue" in kargs:
             _input_properties["defaultValue"] = kargs["defaultValue"]
@@ -551,13 +554,13 @@ class XArrayEvaluator(BaseEvaluator):
         for dim in list(da.dims):
             if dim in nodeDic:
                 coord_data = np.array2string(nodeDic[dim].result.values, separator=",", precision=20, formatter={
-                               'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
+                    'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
                 item_coord = f"({dim}.name ,{coord_data})"
                 coords.append(item_coord)
 
             else:
                 coord_data = np.array2string(da[dim].values, separator=",", precision=20, formatter={
-                                               'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
+                    'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
                 item_coord = f"({dim} ,{coord_data})"
                 coords.append(coord)
 
@@ -565,13 +568,12 @@ class XArrayEvaluator(BaseEvaluator):
 
         data_deff = f'result = xr.DataArray({data}, coords={str_coords})'
 
-        if isinstance(_input_properties["defaultValue"],str):
+        if isinstance(_input_properties["defaultValue"], str):
             data_deff += '.astype("O")'
 
         deff = f"# properties\n_input_properties = {_input_properties}\n\n# values\n{data_deff}"
 
         return deff
-
 
     def dumpNodeToFile(self, nodeDic, nodeId, fileName):
         definition = self.generateNodeDefinition(nodeDic, nodeId)
@@ -773,10 +775,10 @@ class XArrayEvaluator(BaseEvaluator):
         else:
             return False
 
-        #try new definition
+        # try new definition
         temp_res = node.model.evaluate(newDef)
 
-        node.nodeClass="inputtable"
+        node.nodeClass = "inputtable"
         nodeFormat = node.model.getDefaultNodeFormat(node.nodeClass)
         node.fromObj(nodeFormat)
         node.definition = newDef
