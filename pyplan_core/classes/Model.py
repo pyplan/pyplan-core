@@ -1226,7 +1226,6 @@ class Model(object):
                 node.fromObj(obj)
                 node = None
 
-        self.createDefaultNodes()
         [self.nodeDic[nod].generateIO() for nod in self.nodeDic]
 
         opened = None
@@ -1348,18 +1347,6 @@ class Model(object):
             # create symlink from user /public site-package
             os.system(f'rm -rf {venv_path}')
             os.system(f'ln -s -f {user_lib_path} {venv_path}')
-
-    def createDefaultNodes(self):
-        """ Create default nodes as pyplan library, etc """
-
-        # modulo pyplan library
-        if not self.existNode('pyplan_library'):
-            pyplan_library_node = self.createNode(
-                identifier='pyplan_library', moduleId=self.modelNode.identifier, x=50, y=500, nodeClass='module')
-            pyplan_library_node.title = 'Pyplan library'
-            pyplan_library_node.color = '#9fc5e8'
-            pyplan_library_node.nodeInfo['showInputs'] = 0
-            pyplan_library_node.nodeInfo['showOutputs'] = 0
 
     def applyBackwardCompatibility(self):
         # update old selector definition
