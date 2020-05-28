@@ -552,20 +552,11 @@ class XArrayEvaluator(BaseEvaluator):
 
         coords = []
         for dim in list(da.dims):
-            if dim in nodeDic:
-                coord_data = np.array2string(nodeDic[dim].result.values, separator=",", precision=20, formatter={
-                    'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
-                item_coord = f"({dim}.name ,{coord_data})"
-                coords.append(item_coord)
+            coord_data = json.dumps(da[dim].values.tolist())
+            item_coord = f'({dim}.name, {coord_data})' if dim in nodeDic else f"({dim} ,{coord_data})"
+            coords.append(item_coord)
 
-            else:
-                coord_data = np.array2string(da[dim].values, separator=",", precision=20, formatter={
-                    'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}).replace('\n', '')
-                item_coord = f"({dim} ,{coord_data})"
-                coords.append(coord)
-
-        str_coords = "[" + ",".join(coords).replace("'", '"') + "]"
-
+        str_coords = f'[{",".join(coords)}]'
         data_deff = f'result = xr.DataArray({data}, coords={str_coords})'
 
         if isinstance(_input_properties["defaultValue"], str):
