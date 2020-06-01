@@ -6,11 +6,11 @@ import subprocess
 import sys
 import threading
 import unicodedata
+from copy import deepcopy
 from shlex import split
 from site import getsitepackages
 from sys import platform
 from time import sleep
-from copy import deepcopy
 
 import jsonpickle
 import numpy
@@ -23,10 +23,12 @@ from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.Intellisense import Intellisense
 from pyplan_core.classes.IOModule import IOModule
 from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
-from pyplan_core.classes.wizards import (CalculatedField, DataframeGroupby,
-                                         DataframeIndex, SelectColumns,
-                                         SelectRows, sourcecsv, DataarrayFromPandas, InputTable)
-from .DefaultNodeFormats import default_formats                                         
+from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
+                                         DataframeGroupby, DataframeIndex,
+                                         InputTable, SelectColumns, SelectRows,
+                                         sourcecsv)
+
+from .DefaultNodeFormats import default_formats
 
 
 class Model(object):
@@ -1319,25 +1321,29 @@ class Model(object):
         node.definition = "result = ''"
 
     def createSymlinks(self, fileName):
-        if os.getenv('PYPLAN_IDE', '0') != '1' and not os.getenv('ENGINE_MODE', '') in ['fixed', 'local']:
-            # Add user or public path to system paths
-            path_sep = os.path.sep
-            path_arr = fileName[:fileName.rfind(path_sep)].split(path_sep)
+        if os.getenv('PYPLAN_IDE', '0') == '1' or os.getenv('ENGINE_MODE', '') in ['fixed', 'local']:
+            return
 
-            dest_path = path_sep.join(path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
+        # Add user or public path to system paths
+        path_sep = os.path.sep
+        path_arr = fileName[:fileName.rfind(path_sep)].split(path_sep)
 
-            # Get python folder path
-            python_folder = f'python{sys.version[:3]}'
-            try:
-                folder_list = os.listdir(os.path.join(dest_path, '.venv', 'lib'))
-                python_folder = folder_list[len(folder_list)-1]
-            except Exception as ex:
-                pass
+        dest_path = path_sep.join(path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
 
-            # Add user/public library to system paths
-            user_lib_path = os.path.join(dest_path, '.venv', 'lib', python_folder, 'site-packages')
-            venv_path = os.path.join('/venv', 'lib', 'python3.7', 'site-packages')
+        # Get python folder path
+        python_folder = f'python{sys.version[:3]}'
+        try:
+            folder_list = os.listdir(os.path.join(dest_path, '.venv', 'lib'))
+            python_folder = folder_list[len(folder_list)-1]
+        except Exception as ex:
+            pass
 
+        # Add user/public library to system paths
+        user_lib_path = os.path.join(dest_path, '.venv', 'lib', python_folder, 'site-packages')
+        venv_path = os.path.join('/venv', 'lib', 'python3.7', 'site-packages')
+
+        # Check Write Access to user_lib_path
+        if os.access(user_lib_path, os.W_OK):
             if not os.path.isdir(user_lib_path):
                 os.makedirs(user_lib_path, exist_ok=True)
 
