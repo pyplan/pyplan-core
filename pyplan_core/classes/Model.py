@@ -25,8 +25,8 @@ from pyplan_core.classes.IOModule import IOModule
 from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
 from pyplan_core.classes.wizards import (CalculatedField, DataframeGroupby,
                                          DataframeIndex, SelectColumns,
-                                         SelectRows, sourcecsv, DataarrayFromPandas, InputTable)
-from .DefaultNodeFormats import default_formats                                         
+                                         SelectRows, sourcecsv, DataarrayFromPandas, InputTable, CreateIndex)
+from .DefaultNodeFormats import default_formats
 
 
 class Model(object):
@@ -119,7 +119,6 @@ class Model(object):
 
         self._scenarioDic = dict()
         self._wizard = None
-
 
     def connectToWS(self, company_code, session_key):
         # Connect to WS
@@ -216,7 +215,7 @@ class Model(object):
             options -= 1
             found = False
             for node in self.findNodes('moduleId', moduleId):
-                if node.nodeClass!="text":
+                if node.nodeClass != "text":
                     l2x = int(node.x)
                     l2y = int(node.y)
                     r2x = int(node.x) + int(node.w)
@@ -1324,19 +1323,23 @@ class Model(object):
             path_sep = os.path.sep
             path_arr = fileName[:fileName.rfind(path_sep)].split(path_sep)
 
-            dest_path = path_sep.join(path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
+            dest_path = path_sep.join(
+                path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
 
             # Get python folder path
             python_folder = f'python{sys.version[:3]}'
             try:
-                folder_list = os.listdir(os.path.join(dest_path, '.venv', 'lib'))
+                folder_list = os.listdir(
+                    os.path.join(dest_path, '.venv', 'lib'))
                 python_folder = folder_list[len(folder_list)-1]
             except Exception as ex:
                 pass
 
             # Add user/public library to system paths
-            user_lib_path = os.path.join(dest_path, '.venv', 'lib', python_folder, 'site-packages')
-            venv_path = os.path.join('/venv', 'lib', 'python3.7', 'site-packages')
+            user_lib_path = os.path.join(
+                dest_path, '.venv', 'lib', python_folder, 'site-packages')
+            venv_path = os.path.join(
+                '/venv', 'lib', 'python3.7', 'site-packages')
 
             if not os.path.isdir(user_lib_path):
                 os.makedirs(user_lib_path, exist_ok=True)
@@ -1534,7 +1537,8 @@ class Model(object):
             return DataarrayFromPandas.Wizard()
         elif key == 'inputtable':
             return InputTable.Wizard()
-            
+        elif key == 'createindex':
+            return CreateIndex.Wizard()
 
     def getSystemResources(self, onlyMemory=False):
         """Return current system resources"""
