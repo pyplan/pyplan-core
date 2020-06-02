@@ -26,7 +26,7 @@ from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
 from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
                                          DataframeGroupby, DataframeIndex,
                                          InputTable, SelectColumns, SelectRows,
-                                         sourcecsv, CreateIndex)
+                                         sourcecsv, CreateIndex, IndexFromPandas)
 
 from .DefaultNodeFormats import default_formats
 
@@ -1543,6 +1543,8 @@ class Model(object):
             return InputTable.Wizard()
         elif key == 'createindex':
             return CreateIndex.Wizard()
+        elif key == 'indexfrompandas':
+            return IndexFromPandas.Wizard()
 
     def getSystemResources(self, onlyMemory=False):
         """Return current system resources"""
