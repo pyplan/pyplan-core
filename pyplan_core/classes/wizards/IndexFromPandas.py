@@ -10,6 +10,7 @@ class Wizard(BaseWizard):
 
     def generateDefinition(self, model, params):
         nodeId = params["nodeId"]
+        res = ""
 
         if model.existNode(nodeId):
             base_node = model.getNode(nodeId)
@@ -26,7 +27,7 @@ class Wizard(BaseWizard):
 
                 new_index_node.title = column_name
                 new_index_node.definition = f"result = pd.Index({nodeId}.reset_index()['{column_name}'].unique().tolist())"
+                res = new_index_node.identifier
 
-            return nodeId
-
-        return ""
+        return res
+        
