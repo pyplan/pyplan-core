@@ -26,7 +26,7 @@ from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
 from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
                                          DataframeGroupby, DataframeIndex,
                                          InputTable, SelectColumns, SelectRows,
-                                         sourcecsv)
+                                         sourcecsv, CreateIndex, IndexFromPandas)
 
 from .DefaultNodeFormats import default_formats
 
@@ -121,7 +121,6 @@ class Model(object):
 
         self._scenarioDic = dict()
         self._wizard = None
-
 
     def connectToWS(self, company_code, session_key):
         # Connect to WS
@@ -218,7 +217,7 @@ class Model(object):
             options -= 1
             found = False
             for node in self.findNodes('moduleId', moduleId):
-                if node.nodeClass!="text":
+                if node.nodeClass != "text":
                     l2x = int(node.x)
                     l2y = int(node.y)
                     r2x = int(node.x) + int(node.w)
@@ -1328,7 +1327,8 @@ class Model(object):
         path_sep = os.path.sep
         path_arr = fileName[:fileName.rfind(path_sep)].split(path_sep)
 
-        dest_path = path_sep.join(path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
+        dest_path = path_sep.join(
+            path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
 
         # Get python folder path
         python_folder = f'python{sys.version[:3]}'
@@ -1339,7 +1339,8 @@ class Model(object):
             pass
 
         # Add user/public library to system paths
-        user_lib_path = os.path.join(dest_path, '.venv', 'lib', python_folder, 'site-packages')
+        user_lib_path = os.path.join(
+            dest_path, '.venv', 'lib', python_folder, 'site-packages')
         venv_path = os.path.join('/venv', 'lib', 'python3.7', 'site-packages')
 
         # Check Write Access to user_lib_path
@@ -1540,7 +1541,10 @@ class Model(object):
             return DataarrayFromPandas.Wizard()
         elif key == 'inputtable':
             return InputTable.Wizard()
-            
+        elif key == 'createindex':
+            return CreateIndex.Wizard()
+        elif key == 'indexfrompandas':
+            return IndexFromPandas.Wizard()
 
     def getSystemResources(self, onlyMemory=False):
         """Return current system resources"""
