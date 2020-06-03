@@ -32,11 +32,11 @@ class Wizard(BaseWizard):
                     end = params["end"] if "end" in params and params["end"] else None
                     periods = params["periods"] if "periods" in params and params["periods"] else None
                     if start and end:
-                        new_def = f"result = pd.DatetimeIndex(freq='{freq}', start='{start}', end='{end}')"
+                        new_def = f"result = pd.date_range(start='{start}', end='{end}',freq='{freq}')"
                     elif end:
-                        new_def = f"result = pd.DatetimeIndex(freq='{freq}', end='{end}', periods={periods})"
+                        new_def = f"result = pd.date_range(end='{end}', periods={periods},freq='{freq}')"
                     else:
-                        new_def = f"result = pd.DatetimeIndex(freq='{freq}', start='{start}', periods={periods})"
+                        new_def = f"result = pd.date_range(start='{start}', periods={periods},freq='{freq}')"
 
             #test and set new definition
             if new_def:
