@@ -7,7 +7,7 @@ from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
 from pyplan_core.cubepy.cube import kindToString
-from pyplan_core import cubepy 
+from pyplan_core import cubepy
 
 
 class PandasEvaluator(BaseEvaluator):
@@ -505,7 +505,7 @@ class PandasEvaluator(BaseEvaluator):
         """Method executed after calculate node
         """
         if node.nodeClass == "index":
-            if isinstance(result, pd.Index) and result.name is None:
+            if isinstance(result, pd.Index):
                 result.name = node.identifier
 
     def copyAsValues(self, result, nodeDic, nodeId):
