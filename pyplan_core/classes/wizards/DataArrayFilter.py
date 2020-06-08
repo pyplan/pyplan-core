@@ -21,5 +21,5 @@ class Wizard(BaseWizard):
             new_def = f"{new_def}\nresult = _da.sel({json.dumps(filter_dict)}, drop=True)"
 
             model.getNode(nodeId).definition = self.formatDefinition(new_def)
-            return new_def
+            return nodeId
         return ""
