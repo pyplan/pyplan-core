@@ -1365,9 +1365,9 @@ class Model(object):
         # check for cubepy in imports node
         if self.existNode("imports"):
             node = self.getNode("imports")
-            if ", cubepy," in node.definition:
-                node.definition = node.definition.replace(
-                    ", cubepy,", ", pyplan_core.cubepy as cubepy,")
+            if "cubepy" in node.definition and not "cubepy" in sys.modules:
+                sys.modules["cubepy"] = cubepy
+
 
     def isLinux(self):
         if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
