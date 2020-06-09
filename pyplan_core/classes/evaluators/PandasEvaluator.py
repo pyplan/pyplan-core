@@ -315,8 +315,11 @@ class PandasEvaluator(BaseEvaluator):
                     "name": field
                 }
                 if field in nodeDic:
-                    if nodeDic[field].numberFormat:
-                        itemDim["numberFormat"] = nodeDic[field].numberFormat
+                    node = nodeDic[field]
+                    if node.numberFormat:
+                        itemDim["numberFormat"] = node.numberFormat
+                    if node.title:
+                        itemDim["name"] = node.title
                 else:
                     if "datetime" in _result.index.get_level_values(field).dtype.name:
                         itemDim["numberFormat"] = "2,DD,0,,0,0,4,0,$,5,FULL,0"
