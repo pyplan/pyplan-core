@@ -461,20 +461,13 @@ class PandasEvaluator(BaseEvaluator):
                 res["columns"].append(f"{col} ({cube.dtypes[idx].name})")
 
             res["preview"] += "Rows: " + str(len(cube.index))
-            #res += "\nColumns: " + ', '.join([''.join(row) for row in cube.columns.values[:500]])
             res["preview"] += "\nShape: " + str(cube.shape)
-            res["preview"] += "\nMemory: " + \
-                str(round(cube.memory_usage(deep=True).sum() / 1024/1024, 2)) + " Mb"
-            #res["preview"] += "\nValues: \n" + str(cube.head(20))
             res["preview"] += "\nValues: \n" + cube.head(20).to_string()
         elif isinstance(nodeDic[nodeId].result, pd.Series):
             serie = nodeDic[nodeId].result
             if self.isIndexed(serie):
                 res["dims"] = list(serie.index.names)
             res["preview"] += "Rows: " + str(len(serie.index))
-            res["preview"] += "\nMemory: " + \
-                str(round(serie.memory_usage(deep=True) / 1024/1024, 2)) + " Mb"
-            #res["preview"] += "\nValues: \n" + str(serie.head(20))
             res["preview"] += "\nValues: \n" + serie.head(20).to_string()
         elif isinstance(nodeDic[nodeId].result, pd.Index):
             res["preview"] = str(nodeDic[nodeId].result)[:1000]
