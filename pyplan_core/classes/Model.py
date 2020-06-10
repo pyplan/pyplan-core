@@ -1328,7 +1328,7 @@ class Model(object):
         path_arr = fileName[:fileName.rfind(path_sep)].split(path_sep)
 
         dest_path = path_sep.join(
-            path_arr[:6 if path_arr[4] == 'Workgroups' else 5])
+            path_arr[:6 if path_arr[4] == 'Teams' else 5])
 
         # Get python folder path
         python_folder = f'python{sys.version[:3]}'
