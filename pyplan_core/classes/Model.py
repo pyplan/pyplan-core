@@ -1351,9 +1351,9 @@ class Model(object):
             # copy base venv folders
             os.system(f'cp -r -u {venv_path}-bkp/* {user_lib_path}')
 
-            # create symlink from user /public site-package
-            os.system(f'rm -rf {venv_path}')
-            os.system(f'ln -s -f {user_lib_path} {venv_path}')
+        # create symlink from user /public site-package
+        os.system(f'rm -rf {venv_path}')
+        os.system(f'ln -s -f {user_lib_path} {venv_path}')
 
     def applyBackwardCompatibility(self):
         # update old selector definition
