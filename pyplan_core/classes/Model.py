@@ -1342,18 +1342,20 @@ class Model(object):
         user_lib_path = os.path.join(
             dest_path, '.venv', 'lib', python_folder, 'site-packages')
         venv_path = os.path.join('/venv', 'lib', 'python3.7', 'site-packages')
-
-        # Check Write Access to user_lib_path
-        if os.access(user_lib_path, os.W_OK):
+        
+        try:
             if not os.path.isdir(user_lib_path):
                 os.makedirs(user_lib_path, exist_ok=True)
-
             # copy base venv folders
             os.system(f'cp -r -u {venv_path}-bkp/* {user_lib_path}')
+        except:
+            pass
 
         # create symlink from user /public site-package
-        os.system(f'rm -rf {venv_path}')
-        os.system(f'ln -s -f {user_lib_path} {venv_path}')
+        if os.path.isdir(user_lib_path):
+            os.system(f'rm -rf {venv_path}')
+            os.system(f'ln -s -f {user_lib_path} {venv_path}')
+
 
     def applyBackwardCompatibility(self):
         # update old selector definition
