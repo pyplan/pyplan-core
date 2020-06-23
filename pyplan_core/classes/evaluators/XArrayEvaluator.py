@@ -552,7 +552,8 @@ class XArrayEvaluator(BaseEvaluator):
 
         coords = []
         for dim in list(da.dims):
-            coord_data = json.dumps(da[dim].values.tolist())
+            coord_data = json.dumps(
+                da[dim].values.tolist(), ensure_ascii=False)
             item_coord = f'({dim}.name, {coord_data})' if dim in nodeDic else f"({dim} ,{coord_data})"
             coords.append(item_coord)
 
