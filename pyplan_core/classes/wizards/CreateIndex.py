@@ -13,20 +13,23 @@ class Wizard(BaseWizard):
             base_node = model.getNode(nodeId)
             new_def = None
 
-            if params["type"]=="list":
+            if params["type"] == "list":
                 index_values = params["values"]
-                new_def = f"result = pd.Index({index_values})"
-            elif params["type"]=="range":
-                if params["rangeType"]=="string":
+                index_values_str = json.dumps(index_values)
+                new_def = f"result = pd.Index({index_values_str})"
+            elif params["type"] == "range":
+                if params["rangeType"] == "string":
                     prefix = params["stringPrefix"]
-                    index_values = [f'{prefix}{nn}' for nn in range(int(params["from"]), int(params["to"])+1, int(params["step"]))]
+                    index_values = [f'{prefix}{nn}' for nn in range(
+                        int(params["from"]), int(params["to"])+1, int(params["step"]))]
                     str_values = json.dumps(index_values)
                     new_def = f"result = pd.Index({str_values})"
-                elif params["rangeType"]=="numeric":
-                    index_values = list(range(int(params["from"]), int(params["to"])+1, int(params["step"])))
+                elif params["rangeType"] == "numeric":
+                    index_values = list(range(int(params["from"]), int(
+                        params["to"])+1, int(params["step"])))
                     str_values = json.dumps(index_values)
                     new_def = f"result = pd.Index({str_values})"
-                elif params["rangeType"]=="date":
+                elif params["rangeType"] == "date":
                     freq = params["freq"]
                     start = params["start"] if "start" in params and params["start"] else None
                     end = params["end"] if "end" in params and params["end"] else None
@@ -38,9 +41,9 @@ class Wizard(BaseWizard):
                     else:
                         new_def = f"result = pd.date_range(start='{start}', periods={periods},freq='{freq}')"
 
-            #test and set new definition
+            # test and set new definition
             if new_def:
                 temp_res = model.evaluate(new_def)
                 base_node.definition = new_def
-            
+
         return nodeId

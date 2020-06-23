@@ -23,12 +23,8 @@ class Wizard(BaseWizard):
         nodeId = params["nodeId"]
         if model.existNode(nodeId):
             base_node = model.getNode(nodeId)
-            index_values = json.loads(params["values"])
-            index_values_str = "["
-            for value in index_values:
-                index_values_str = f"{index_values_str}{value}," if self._is_number(
-                    value) else f"{index_values_str}'{value}',"
-            index_values_str = f"{index_values_str[:-1]}]"
+            index_values = params["values"]
+            index_values_str = json.dumps(index_values)
             for output_node in base_node.outputs:
                 if model.existNode(output_node) and model.getNode(output_node).nodeClass == "inputtable":
                     input_table_node = model.getNode(output_node)
