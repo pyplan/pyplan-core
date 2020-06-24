@@ -26,7 +26,7 @@ from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
 from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
                                          DataframeGroupby, DataframeIndex,
                                          InputTable, SelectColumns, SelectRows,
-                                         sourcecsv, CreateIndex, IndexFromPandas, DataArrayFilter, RenameIndexItem)
+                                         sourcecsv, CreateIndex, IndexFromPandas, DataArrayFilter, EditIndex, RenameIndexItem)
 
 from .DefaultNodeFormats import default_formats
 
@@ -1370,7 +1370,6 @@ class Model(object):
             if "cubepy" in node.definition and not "cubepy" in sys.modules:
                 sys.modules["cubepy"] = cubepy
 
-
     def isLinux(self):
         if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
             return True
@@ -1549,9 +1548,10 @@ class Model(object):
             return IndexFromPandas.Wizard()
         elif key == 'dataarrayfilter':
             return DataArrayFilter.Wizard()
+        elif key == 'editindex':
+            return EditIndex.Wizard()
         elif key == 'renameindexitem':
             return RenameIndexItem.Wizard()
-        
 
     def getSystemResources(self, onlyMemory=False):
         """Return current system resources"""
