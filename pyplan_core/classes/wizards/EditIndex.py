@@ -1,5 +1,4 @@
 from pyplan_core.classes.wizards.BaseWizard import BaseWizard
-from pyplan_core.classes.evaluators.XArrayEvaluator import XArrayEvaluator
 from pandas import Index
 import json
 
