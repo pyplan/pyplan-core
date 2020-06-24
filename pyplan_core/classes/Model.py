@@ -1173,6 +1173,8 @@ class Model(object):
         if textModel:
             opened = jsonpickle.decode(textModel)
         else:
+            if not self.isLinux():
+                fileName = fileName.replace('/','\\')
             with open(fileName, 'r') as f:
                 opened = jsonpickle.decode(f.read())
                 f.close()
