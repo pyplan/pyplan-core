@@ -29,10 +29,3 @@ class Wizard(BaseWizard):
             return nodeId
 
         return ""
-
-    def _is_number(self, s):
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return s.isnumeric()
