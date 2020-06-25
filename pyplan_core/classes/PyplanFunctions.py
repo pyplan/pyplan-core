@@ -1035,13 +1035,14 @@ class PyplanFunctions(object):
         """
         return Selector(options, selected, multiselect)
 
-    def send_message(self, message_text, message_title=None, not_level_reverse=None):
+    def send_message(self, message_text, message_title=None, not_level_reverse="info"):
         """Send message to UI. Only used with Pyplan UI
             Ex.
                 pp.send_message("The process has been completed","Process complete!","success")            
         """
         if self.model and self.model.ws:
-            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[not_level_reverse]
+            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
+                not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
             self.model.ws.sendMsg(message_text, message_title, not_level)
 
     def progressbar(self, progress, message_text=""):
