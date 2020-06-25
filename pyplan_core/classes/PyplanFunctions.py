@@ -5,6 +5,7 @@ import re
 import os
 import importlib
 import subprocess
+from .ws.settings import ws_settings
 try:
     from StringIO import StringIO as BytesIO
 except ImportError:
@@ -1034,13 +1035,15 @@ class PyplanFunctions(object):
         """
         return Selector(options, selected, multiselect)
 
-    def send_message(self, message_text, message_title=None):
+    def send_message(self, message_text, message_title=None, not_level_reverse="info"):
         """Send message to UI. Only used with Pyplan UI
             Ex.
-                pp.send_message("Process complete!")
+                pp.send_message("The process has been completed","Process complete!","success")            
         """
         if self.model and self.model.ws:
-            self.model.ws.sendMsg(message_text, message_title)
+            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
+                not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
+            self.model.ws.sendMsg(message_text, message_title, not_level)
 
     def progressbar(self, progress, message_text=""):
         """Create and update progress bar. Only used with Pyplan UI
@@ -1331,6 +1334,7 @@ class Pandas_from_acc():
             return np.bytes_
         else:
             return None
+
     @classmethod
     def __extract_defs(defs_str):
         defs = {}
