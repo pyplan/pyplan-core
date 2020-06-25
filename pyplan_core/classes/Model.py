@@ -27,6 +27,7 @@ from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
                                          DataframeGroupby, DataframeIndex,
                                          InputTable, SelectColumns, SelectRows,
                                          sourcecsv, CreateIndex, IndexFromPandas, DataArrayFilter, EditIndex, RenameIndexItem)
+from pyplan_core.classes.ws.settings import ws_settings
 
 from .DefaultNodeFormats import default_formats
 
@@ -1342,7 +1343,7 @@ class Model(object):
         user_lib_path = os.path.join(
             dest_path, '.venv', 'lib', python_folder, 'site-packages')
         venv_path = os.path.join('/venv', 'lib', 'python3.7', 'site-packages')
-        
+
         try:
             if not os.path.isdir(user_lib_path):
                 os.makedirs(user_lib_path, exist_ok=True)
@@ -1355,7 +1356,6 @@ class Model(object):
         if os.path.isdir(user_lib_path):
             os.system(f'rm -rf {venv_path}')
             os.system(f'ln -s -f {user_lib_path} {venv_path}')
-
 
     def applyBackwardCompatibility(self):
         # update old selector definition
@@ -1722,9 +1722,11 @@ class Model(object):
                         _imports[self._check_import_function(_el)] = {'import_name': self._check_import_function(
                             _el), 'import_type': 'from', 'name': None, 'version': None}
                     elif self.ws:
-                        self.ws.sendMsg(_element, 'Could not find import from')
+                        self.ws.sendMsg(_element, 'Could not find import from',
+                                        not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
                 elif self.ws:
-                    self.ws.sendMsg(_element, 'Element not recognized')
+                    self.ws.sendMsg(_element, 'Element not recognized',
+                                    not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
 
             _installed_libs = self._check_installed_libraries()
             for key in _imports.keys():
@@ -1737,7 +1739,8 @@ class Model(object):
             return _used_libraries
         except Exception as ex:
             if self.ws:
-                self.ws.sendMsg(str(ex), 'Error getting used libraries')
+                self.ws.sendMsg(str(ex), 'Error getting used libraries',
+                                not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
             return []
 
     def _check_import_function(self, _element):
@@ -1781,7 +1784,8 @@ class Model(object):
             return installed_libraries
         except Exception as ex:
             if self.ws:
-                self.ws.sendMsg(str(ex), 'Error checking installed libraries')
+                self.ws.sendMsg(str(ex), 'Error checking installed libraries',
+                                not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
             return {}
 
     def listInstalledLibraries(self):
