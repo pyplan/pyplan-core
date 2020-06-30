@@ -33,8 +33,11 @@ class BaseWizard(object):
                         item = dict(field=col, type="index" if col in nodeResult.index.names else "column",  dtype=self.kindToString(
                             sample_df.dtypes[nn].kind))
                         if not count_by_columns is None and col in count_by_columns:
-                            item["values"] = sample_df[col].dropna(
-                            ).sort_values().unique().tolist()
+                            try: # for safe errors on sort_values
+                                item["values"] = sample_df[col].dropna(
+                                ).sort_values().unique().tolist()
+                            except:
+                                pass
                         res.append(item)
         return res
 
