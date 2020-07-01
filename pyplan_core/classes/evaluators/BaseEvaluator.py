@@ -13,11 +13,10 @@ class BaseEvaluator(object):
     Base Class to manage node evaluators
     """
 
-    def createResult(self, result, structure, resultIsJson=False, onRow=None, onColumn=None, node=None, pageInfo=None):
+    def createResult(self, result, resultIsJson=False, onRow=None, onColumn=None, node=None, pageInfo=None):
         if resultIsJson:
 
             res = {
-                "resultType": json.dumps(structure),
                 "result": json.loads(result),
             }
             if not onRow is None:
@@ -33,7 +32,6 @@ class BaseEvaluator(object):
         else:
 
             res = {
-                "resultType": json.dumps(structure),
                 "result": result,
                 "onRow": onRow,
                 "onColumn": onColumn
@@ -50,40 +48,21 @@ class BaseEvaluator(object):
 
             return json.dumps(res)
 
-    def getStructure(self, result):
-        structure = dict()
-        structure["type"] = str(type(result))
-        return structure
-
-    def checkStructure(self, result, resultType):
-        """ Check current vs result structure. Result False for distinct structure """
-        res = True
-        if resultType:
-            try:
-                structure = json.loads(resultType)
-                result_structure = self.getStructure(result)
-                if structure["type"] != result_structure["type"]:
-                    res = False
-            except Exception as ex:
-                print(f"Error checking structure: {ex}")
-
-        return res
 
     def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
-        result_structure = self.getStructure(result)
         if isinstance(result, np.ndarray):
-            return self.createResult(result.tolist(), result_structure, node=nodeDic[nodeId])
+            return self.createResult(result.tolist(), node=nodeDic[nodeId])
         elif callable(result):  # is function
             aux = {
                 "params": inspect.getargspec(result)[0]
             }
-            return self.createResult(jsonpickle.encode(aux), result_structure, node=nodeDic[nodeId])
+            return self.createResult(jsonpickle.encode(aux), node=nodeDic[nodeId])
         else:
 
             try:
-                return self.createResult(result, result_structure, node=nodeDic[nodeId])
+                return self.createResult(result, node=nodeDic[nodeId])
             except:
-                return self.createResult(str(result), result_structure, node=nodeDic[nodeId])
+                return self.createResult(str(result), node=nodeDic[nodeId])
 
     def getCubeValues(self, result, nodeDic, nodeId,
                       query): raise NotImplementedError

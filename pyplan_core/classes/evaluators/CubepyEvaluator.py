@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from pyplan_core import cubepy 
+from pyplan_core import cubepy
 from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
@@ -23,7 +23,6 @@ class CubepyEvaluator(BaseEvaluator):
             return self.indexEvaluate(result, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow)
 
     def cubeEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
-        result_structure = self.getStructure(result)
         sby = safesum
         if summaryBy == 'avg':
             sby = safemean
@@ -181,7 +180,7 @@ class CubepyEvaluator(BaseEvaluator):
                 res["data"].append(
                     _totalRow[:CubepyEvaluator.MAX_COLUMS].tolist())
 
-        return self.createResult(res, result_structure, onRow=onRow, onColumn=onColumn, node=nodeDic[nodeId], pageInfo=pageInfo)
+        return self.createResult(res, onRow=onRow, onColumn=onColumn, node=nodeDic[nodeId], pageInfo=pageInfo)
 
     def applyHierarchy(self, result, nodeDic, nodeId, dims, rows, columns, sby):
 
@@ -288,7 +287,7 @@ class CubepyEvaluator(BaseEvaluator):
 
     def indexEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
         res = result.values[:100].tolist()
-        return self.createResult(res, self.getStructure(res), node=nodeDic[nodeId])
+        return self.createResult(res, node=nodeDic[nodeId])
 
     def addToFilter(self, nodeDic, dim, filters):
         if "values" in dim and dim["values"] is not None and len(dim["values"]) > 0:
