@@ -1169,7 +1169,7 @@ class Model(object):
             opened = jsonpickle.decode(textModel)
         else:
             if not self.isLinux():
-                fileName = fileName.replace('/','\\')
+                fileName = fileName.replace('/', '\\')
             with open(fileName, 'r') as f:
                 opened = jsonpickle.decode(f.read())
                 f.close()
@@ -1760,12 +1760,23 @@ class Model(object):
                             top_level_file = os.path.join(
                                 _dir, folder, 'top_level.txt')
                             if os.path.isfile(top_level_file):
-                                top_level = str(
-                                    open(top_level_file).read()).replace('\n', '')
+                                top_level = ""
+                                try:
+                                    top_level = str(
+                                        open(top_level_file).read()).replace('\n', '')
+                                except Exception as ex:
+                                    top_level = str(
+                                        open(top_level_file, encoding="utf8").read()).replace('\n', '')
                                 metadata_file = os.path.join(
                                     _dir, folder, 'METADATA' if '.dist-info' in folder else 'PKG-INFO')
                                 if os.path.isfile(metadata_file):
-                                    metadata = str(open(metadata_file).read())
+                                    metadata = ""
+                                    try:
+                                        metadata = str(
+                                            open(metadata_file).read())
+                                    except Exception as ex:
+                                        metadata = str(
+                                            open(metadata_file, encoding="utf8").read())
                                     metadata_arr = metadata.split('\n')
                                     for metadata_item in metadata_arr:
                                         if str(metadata_item).startswith('Name: '):
