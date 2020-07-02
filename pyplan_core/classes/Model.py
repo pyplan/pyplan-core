@@ -241,7 +241,7 @@ class Model(object):
         else:
             return False
 
-    def evaluateNode(self, nodeId, dims=None, rows=None, columns=None, summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, resultType=""):
+    def evaluateNode(self, nodeId, dims=None, rows=None, columns=None, summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
         """Evaluate node. Call evaluator class for implement diferent evaluators."""
         if self.existNode(nodeId):
             result = None
@@ -253,9 +253,6 @@ class Model(object):
             if not result is None:
                 self.evaluationVersion += 1
                 evaluator = Evaluator.createInstance(result)
-                if not evaluator.checkStructure(result, resultType):
-                    raise ValueError("bad_node_structure")
-                    #raise exceptions.NotAcceptable("bad_node_structure")
                 return evaluator.evaluateNode(result, self.nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow)
         return ''
 
@@ -333,7 +330,7 @@ class Model(object):
                 evaluator = Evaluator.createInstance(result)
                 return evaluator.getCubeDimensionValues(result, self.nodeDic, nodeId, query)
 
-    def getCubeMetadata(self, nodeId, resultType=''):
+    def getCubeMetadata(self, nodeId ):
         """Return metadata of cube. Used from pivotgrid"""
         if self.existNode(nodeId):
             result = None
@@ -344,9 +341,6 @@ class Model(object):
 
             if not result is None:
                 evaluator = Evaluator.createInstance(result)
-                if resultType:
-                    if not evaluator.checkStructure(result, resultType):
-                        raise ValueError("bad_node_structure")
                 return evaluator.getCubeMetadata(result, self.nodeDic, nodeId)
 
     def setNodeValueChanges(self, changes):
