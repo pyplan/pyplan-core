@@ -330,7 +330,7 @@ class Model(object):
                 evaluator = Evaluator.createInstance(result)
                 return evaluator.getCubeDimensionValues(result, self.nodeDic, nodeId, query)
 
-    def getCubeMetadata(self, nodeId ):
+    def getCubeMetadata(self, nodeId):
         """Return metadata of cube. Used from pivotgrid"""
         if self.existNode(nodeId):
             result = None
@@ -924,7 +924,7 @@ class Model(object):
         moduleId = self.clearId(moduleId)
         if self.existNode(moduleId):
             for nodeId in nodeList:
-                if self.existNode(nodeId):
+                if self.existNode(nodeId) and nodeId != moduleId:
                     self.getNode(nodeId).moduleId = moduleId
                     res.append(nodeId)
         return res
