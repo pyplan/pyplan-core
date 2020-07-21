@@ -39,7 +39,7 @@ class BaseNode(object):
         self.units = None
         self.numberFormat = None
         self.color = None
-        self.errorInDef = False
+        self._errorInDef = False
         self.nodeClass = nodeClass if not nodeClass is None else "variable"
         self._definition = self.getDefaultDefinitionByClass(self.nodeClass)
         self.nodeInfo = self.getDefaultNodeinfoByClass(self.nodeClass)
@@ -291,6 +291,19 @@ class BaseNode(object):
                     self.invalidate()
 
     @property
+    def errorInDef(self):
+        if self.originalId and self.model.existNode(self.originalId):
+            return self.model.getNode(self.originalId)._errorInDef
+        return self._errorInDef
+
+    @errorInDef.setter
+    def errorInDef(self, value):
+        if self.originalId and self.model.existNode(self.originalId):
+            self.model.getNode(self.originalId)._errorInDef = value
+        else:
+            self._errorInDef = value
+
+    @property
     def isIndexed(self):
         raise ValueError("TODO: Mover isIndexed a clase BaseEvaluator")
         return False
@@ -369,7 +382,7 @@ class BaseNode(object):
                 else:
                     return res
             except Exception as e:
-                self.errorInDef = True
+                self._errorInDef = True
         return None
 
     @property
@@ -465,11 +478,11 @@ class BaseNode(object):
     def compileDef(self, definition):
         """Compile definition"""
         try:
-            self.errorInDef = False
+            self._errorInDef = False
             tmpCode = compile(str(definition), '<string>', 'exec')
             return tmpCode
         except SyntaxError:
-            self.errorInDef = True
+            self._errorInDef = True
             # TODO: get detail of error
             pass
         return None
@@ -564,7 +577,7 @@ class BaseNode(object):
                 if not extraParams is None:
                     for keyParam in extraParams:
                         localRes[keyParam] = extraParams[keyParam]
-                
+
                 customImports = self.model.getCustomImports()
                 if customImports:
                     for keyParam in customImports:
@@ -621,30 +634,32 @@ class BaseNode(object):
     def postCalculate(self):
         evaluator = Evaluator.createInstance(self._result)
         evaluator.postCalculate(self, self._result)
-        if self.nodeClass=="inputtable":
+        if self.nodeClass == "inputtable":
             self.validateInputTable(evaluator)
 
-    def validateInputTable(self,evaluator):
+    def validateInputTable(self, evaluator):
         """Validate inputs of the inputtable node"""
         da = self._result
-        if isinstance(da,xr.DataArray):
-            has_changed=False
+        if isinstance(da, xr.DataArray):
+            has_changed = False
             for dim in da.dims:
                 node_index = self.model.getNode(dim)
-                if list(node_index.result.values) != list(da.coords[dim].values): #values of index has changed
+                # values of index has changed
+                if list(node_index.result.values) != list(da.coords[dim].values):
                     has_changed = True
-                    _input_properties=None
+                    _input_properties = None
                     if "_input_properties" in self.definition:
-                        _input_properties =  self.model.evaluate(self._definition.split("# values")[0] + "result = _input_properties")
-                    else: 
-                        _input_properties = {"defaultValue":0.}
+                        _input_properties = self.model.evaluate(self._definition.split("# values")[
+                                                                0] + "result = _input_properties")
+                    else:
+                        _input_properties = {"defaultValue": 0.}
                     da = da.reindex({dim: list(node_index.result.values)})
                     da = da.fillna(_input_properties["defaultValue"])
 
             if has_changed:
                 self._result = da
-                self._definition = evaluator.generateNodeDefinition(self.model.nodeDic, self.identifier)
-
+                self._definition = evaluator.generateNodeDefinition(
+                    self.model.nodeDic, self.identifier)
 
     def parseNames(self, compiledCode):
         """Parse names used in node definition"""
@@ -823,7 +838,6 @@ class BaseNode(object):
 
             self._model.ws.sendDebugInfo(
                 self.identifier, self.title if self.title else "", "endCalc", self.lastEvaluationTime, resources["usedMemory"], resources["totalMemory"], fromDynamic=fromDynamic)
-
 
     # ***********************************
     # *** CYCLICK EVALUATOR  METHODS  ***
