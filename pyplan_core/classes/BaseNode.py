@@ -382,7 +382,7 @@ class BaseNode(object):
                 else:
                     return res
             except Exception as e:
-                self._errorInDef = True
+                self.errorInDef = True
         return None
 
     @property
@@ -478,11 +478,11 @@ class BaseNode(object):
     def compileDef(self, definition):
         """Compile definition"""
         try:
-            self._errorInDef = False
+            self.errorInDef = False
             tmpCode = compile(str(definition), '<string>', 'exec')
             return tmpCode
         except SyntaxError:
-            self._errorInDef = True
+            self.errorInDef = True
             # TODO: get detail of error
             pass
         return None
