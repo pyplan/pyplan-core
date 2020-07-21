@@ -708,7 +708,7 @@ class PyplanFunctions(object):
     def goal_seek(self, nodeIdX, nodeIdObjective, goal=0, startValue=1, matrixIndex=None):
         """ Finds the value of nodeIdX that makes nodeIdObjective equal to goal.
             nodeIdX: String with id of node X
-            nodeIdObjective: String with id of node X
+            nodeIdObjective: String with id of node Objective
             matrixIndex: Index for multidimensional goal seek
         """
         _getNodeFn = self.model.getNode
@@ -723,13 +723,24 @@ class PyplanFunctions(object):
                 _res = newton(_f, x0=startValue)
                 return _res
             else:
-                raise ValueError(
-                    "Multidimensional goal seek has not Implemented")
+                _indexName = matrixIndex.name
+                for item in matrixIndex:
+                    def _f(x):
+                        _values = _getNodeFn(nodeIdX).result
+                        _values.loc[{_indexName: slice(item, item)}] = x
+                        np.set_printoptions(threshold=np.prod(_values.values.shape))
+                        data = np.array2string(_values.values, separator=",", precision=20,
+                                               formatter={'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}
+                                               ).replace('\n', '')
+                        _getNodeFn(nodeIdX).definition = f"result = xr.DataArray({data},[{_indexName}])"
+                        value = _getNodeFn(nodeIdObjective).result
+                        return self.subscript(value, matrixIndex, item)
+                    _res = newton(_f, x0=startValue)
         else:
             raise ValueError("scipy library not found")
 
     def _exists_module(self, import_name):
-        """Return true if module is intalled
+        """Return true if module is installed
         """
         try:
             importlib.import_module(import_name)
