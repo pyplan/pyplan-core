@@ -27,6 +27,7 @@ class Wizard(BaseWizard):
             new_def = "# Preparing the dataframe to be converted to dataarray\n"
             value_colum = ""
             previous_step = nodeId
+            default_value = 0
 
             for index_dic in params["indexes"]:
                 if not index_dic["model_index"]:
@@ -67,7 +68,7 @@ class Wizard(BaseWizard):
                 "\"_#_", "").replace("_#_\"", "")
 
             new_def += f"_df = {previous_step}.reset_index().groupby({json.dumps(index_list)}, as_index=False).agg({agg_dic})\n"
-            new_def += f"result = pp.dataarray_from_pandas(_df, {domain_dic_str}, '{value_colum}')"
+            new_def += f"result = pp.dataarray_from_pandas(_df, {domain_dic_str}, '{value_colum}', {default_value})"
             new_node.definition = new_def
 
             return new_node.identifier
