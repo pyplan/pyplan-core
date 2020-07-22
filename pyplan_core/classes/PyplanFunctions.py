@@ -432,7 +432,9 @@ class PyplanFunctions(object):
             file_to_read = os.path.join(target_dir, f"{namedRange if namedRange else ''}.pkl") if os.path.isfile(
                 os.path.join(target_dir, f"{namedRange if namedRange else ''}.pkl")) else file_to_read_legacy
 
-            if os.path.isfile(file_to_read):
+            # Read from pickle if pickle is newer than Excel file. Otherwise, read directly from Excel file
+            # Avoids reading outdated pickle files
+            if (os.path.isfile(file_to_read)) and (os.path.getmtime(file_to_read) >= os.path.getmtime(filename)):
                 df = pd.read_pickle(file_to_read, compression='gzip')
                 if not indexes is None:
                     df.set_index(indexes, inplace=True)
