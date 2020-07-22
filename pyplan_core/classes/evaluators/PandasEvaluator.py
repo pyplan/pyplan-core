@@ -475,6 +475,8 @@ class PandasEvaluator(BaseEvaluator):
         """
         if node.nodeClass == "index":
             if isinstance(result, pd.Index):
+                if result.isna().any():
+                    raise ValueError("Nan/None values are not allowed in indexes")
                 result.name = node.identifier
 
     def copyAsValues(self, result, nodeDic, nodeId):
