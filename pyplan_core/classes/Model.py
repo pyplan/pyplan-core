@@ -56,7 +56,6 @@ class Model(object):
         self._customImports = None
         self.company_code = None
         self.session_key = None
-        self.ws = None
         self.debugMode = None
         self.WS = WSClass
 
@@ -1579,12 +1578,18 @@ class Model(object):
         mem_used = (_read_int(
             '/sys/fs/cgroup/memory/memory.usage_in_bytes') - _read_cache()) / 1024/1024/1024
 
+        max_mem = _read_int(
+            '/sys/fs/cgroup/memory/memory.max_usage_in_bytes') / 1024/1024/1024
+
+        
+
         # get cpu usage
 
         if onlyMemory:
             return {
                 'totalMemory': mem_limit,
-                'usedMemory': mem_used
+                'usedMemory': mem_used,
+                "maxMemory": max_mem
             }
         else:
 
@@ -1608,7 +1613,8 @@ class Model(object):
                 'usedMemory': mem_used,
                 'usedCPU': used_cpu,
                 'pid': self.getPID(),
-                'currentNode': current_node
+                'currentNode': current_node,
+                "maxMemory": max_mem
             }
 
     def ensureModelLibraries(self):
