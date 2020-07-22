@@ -837,7 +837,7 @@ class BaseNode(object):
                 }
 
             self._model.ws.sendDebugInfo(
-                self.identifier, self.title if self.title else "", "endCalc", self.lastEvaluationTime, resources["usedMemory"], resources["totalMemory"], fromDynamic=fromDynamic)
+                self.identifier, self.title if self.title else "", "endCalc", self.lastEvaluationTime, resources["usedMemory"], resources["totalMemory"], resources["maxMemory"], fromDynamic=fromDynamic)
 
     # ***********************************
     # *** CYCLICK EVALUATOR  METHODS  ***
