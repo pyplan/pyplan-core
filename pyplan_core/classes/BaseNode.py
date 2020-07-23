@@ -459,16 +459,14 @@ class BaseNode(object):
             try:
                 tmpCode = self.compileDef(self._definition)
             except SyntaxError:
-                aa = 1
-                # TODO: get detail of error
+                pass
 
             if not tmpCode is None:
-                # TODO: if cp.excel.. in def and other node Id is excel then don't generate input for that node
                 nameList = self.parseNames(tmpCode)
                 finalList = []
                 for item in nameList:
                     if item and self.model.existNode(item):
-                        rxText = "[^!.a-zA-Z_]\\b(###)\\b(?!={1}(?!={1}))".replace(
+                        rxText = "(?<!\\.)\\b(###)\\b(?!={1}(?!={1}))".replace(
                             "###", item)
                         rx = re.compile(rxText)
                         if len(re.findall(rx, self.definition)) > 0:
