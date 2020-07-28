@@ -188,8 +188,6 @@ class PureXArrayDynamic(BaseDynamic):
         for _node in cyclicNodes:
             _id = _node["node"].identifier
             _node["node"]._result = cyclicDic[_id]
-            _node["node"].__resultMemory = Helpers.getResultSize(
-                _node["node"]._result)
             _node["node"]._isCalc = True
             _node["node"].lastEvaluationTime = _node["calcTime"]
             _node["node"].evaluationVersion = node.model.evaluationVersion

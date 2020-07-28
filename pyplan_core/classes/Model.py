@@ -89,12 +89,6 @@ class Model(object):
         else:
             return None
 
-    def getTotalMemory(self):
-        res = 0
-        for node in self.nodeDic:
-            res = res+self.nodeDic[node].usedMemory
-        return res
-
     def getCurrentModelPath(self):
         if self.existNode('current_path'):
             return self.getNode('current_path').result

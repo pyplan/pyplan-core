@@ -79,6 +79,16 @@ class PandasEvaluator(BaseEvaluator):
             dfResult = pd.DataFrame.pivot_table(
                 _filteredDataFrame, index=_rows, columns=_columns, aggfunc=sby, margins=False, margins_name="Total")
 
+            # apply orders to result (pivot_table don't mantain the original order)
+            if len(_rows) > 0:
+                dfResult = dfResult.reindex(
+                    index=_filteredDataFrame.index.get_level_values(_rows[0]).unique().tolist())
+            if len(_columns) > 0:
+                level = 1 if isinstance(dfResult.columns, pd.MultiIndex) and len(
+                    dfResult.columns.levels) > 1 else 0
+                dfResult = dfResult.reindex(columns=_filteredDataFrame.index.get_level_values(
+                    _columns[0]).unique().tolist(), level=level)
+
             if needT:
                 dfResult = dfResult.T
                 aux = _rows
@@ -371,6 +381,11 @@ class PandasEvaluator(BaseEvaluator):
             _groupedDF = _filteredResult.agg(_agg).to_frame("Total").T if len(
                 _cols) == 0 else _filteredResult.groupby(_cols, sort=False).agg(_agg)
 
+            # apply reindex only if have 1 dimension. groupby work fine with sort=False with two or more dims.
+            if len(_cols) == 1:
+                _groupedDF = _groupedDF.reindex(
+                    index=_result.index.get_level_values(_cols[0]).unique().to_list())
+
             if useCustomFillMeasures:
                 self._applyGroupMeasures(_groupedDF, _result.groupMeasures)
 
@@ -476,7 +491,8 @@ class PandasEvaluator(BaseEvaluator):
         if node.nodeClass == "index":
             if isinstance(result, pd.Index):
                 if result.isna().any():
-                    raise ValueError("Nan/None values are not allowed in indexes")
+                    raise ValueError(
+                        "Nan/None values are not allowed in indexes")
                 result.name = node.identifier
 
     def copyAsValues(self, result, nodeDic, nodeId):
