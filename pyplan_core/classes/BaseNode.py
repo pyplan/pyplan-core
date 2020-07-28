@@ -53,7 +53,6 @@ class BaseNode(object):
         self.h = 50
 
         self._ioEngine = IOEngine(self)
-        self._resultMemory = 0
         self.system = False
         self.lastEvaluationTime = 0
         self.lastEvaluationConsole = ""
@@ -194,7 +193,6 @@ class BaseNode(object):
                 self._isCalc = False
                 self.profileParent = None
                 self._result = None
-                self._resultMemory = 0
 
     @property
     def isCalc(self):
@@ -225,7 +223,8 @@ class BaseNode(object):
 
     @property
     def usedMemory(self):
-        return (getsizeof(self.definition) + self._resultMemory) / 1024 / 1024
+        # keep to support backward compatibility
+        return 0
 
     @property
     def hasPicture(self):
@@ -423,14 +422,12 @@ class BaseNode(object):
         self._isCalc = False
         self.profileParent = None
         self._result = None
-        self._resultMemory = 0
 
     def invalidate(self, fromCircularNode=False):
         """Invalidate node result"""
         self._isCalc = False
         self.profileParent = None
         self._result = None
-        self._resultMemory = 0
         if self.isCircular() and not fromCircularNode:
             circularNodes = self.getSortedCyclicDependencies()
             for node in circularNodes:
@@ -599,12 +596,8 @@ class BaseNode(object):
                     if self.nodeClass not in ["button", "module", "text"]:
                         if 'this' in localRes:
                             self._result = localRes['this']
-                            self._resultMemory = Helpers.getResultSize(
-                                self._result)
                         elif 'result' in localRes:
                             self._result = localRes['result']
-                            self._resultMemory = Helpers.getResultSize(
-                                self._result)
                         else:
                             self._result = None
                             if self.lastEvaluationConsole != "":
