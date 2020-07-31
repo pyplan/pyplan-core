@@ -382,7 +382,8 @@ class CubepyEvaluator(BaseEvaluator):
                 "isEditable": True if self.isTable(nodeDic[nodeId]) == "1" else False,
                 "nodeProperties": {
                     "title": nodeDic[nodeId].title if not nodeDic[nodeId].title is None else nodeDic[nodeId].identifier,
-                    "numberFormat": nodeDic[nodeId].numberFormat
+                    "description": nodeDic[nodeId].description,
+                    "numberFormat": nodeDic[nodeId].numberFormat,
                 }
             }
 
