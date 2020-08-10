@@ -730,11 +730,14 @@ class PyplanFunctions(object):
                     def _f(x):
                         _values = _getNodeFn(nodeIdX).result
                         _values.loc[{_indexName: slice(item, item)}] = x
-                        np.set_printoptions(threshold=np.prod(_values.values.shape))
+                        np.set_printoptions(
+                            threshold=np.prod(_values.values.shape))
                         data = np.array2string(_values.values, separator=",", precision=20,
-                                               formatter={'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}
+                                               formatter={
+                                                   'float_kind': lambda x: "np.nan" if np.isnan(x) else repr(x)}
                                                ).replace('\n', '')
-                        _getNodeFn(nodeIdX).definition = f"result = xr.DataArray({data},[{_indexName}])"
+                        _getNodeFn(
+                            nodeIdX).definition = f"result = xr.DataArray({data},[{_indexName}])"
                         value = _getNodeFn(nodeIdObjective).result
                         return self.subscript(value, matrixIndex, item)
                     _res = newton(_f, x0=startValue)
@@ -1058,14 +1061,16 @@ class PyplanFunctions(object):
                 not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
             self.model.ws.sendMsg(message_text, message_title, not_level)
 
-    def progressbar(self, progress, message_text=""):
+    def progressbar(self, progress, message_text="", not_level_reverse="info"):
         """Create and update progress bar. Only used with Pyplan UI
             Ex.
-                pp.progressbar(20, "Step 1")
-                pp.progressbar(100, "Complete!")
+                pp.progressbar(20, "Step 1","info")
+                pp.progressbar(100, "Complete!","success")
         """
         if self.model and self.model.ws:
-            self.model.ws.progressbar(progress, message_text)
+            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
+                not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
+            self.model.ws.progressbar(progress, message_text, not_level)
 
     def create_report(self, reportItems, reportIndexName="Report index", reportIndex=None):
         """ Concatenate the reportItems dic dataarrays along the reportIndex dimension
