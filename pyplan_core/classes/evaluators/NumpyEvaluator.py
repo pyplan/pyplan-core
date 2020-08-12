@@ -13,9 +13,9 @@ class NumpyEvaluator(XArrayEvaluator):
 
     AXISNAME = "Axis "
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         cube = self.createCube(nodeDic[nodeId].identifier, result)
-        return super().evaluateNode(cube, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow)
+        return super().evaluateNode(cube, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow, hideEmpty)
 
     def hasDim(self, result, dim):
         return True if dim.split(".")[0] in result.dims else False

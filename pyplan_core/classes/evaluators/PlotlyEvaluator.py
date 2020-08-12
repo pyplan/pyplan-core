@@ -6,7 +6,7 @@ from plotly.graph_objs._figure import Figure
 
 class PlotlyEvaluator(BaseEvaluator):
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         fig = result
         if not "layout" in fig or not "margin" in fig["layout"] or fig["layout"]["margin"]["b"] is None:
             fig.update_layout(margin=dict(b=10))

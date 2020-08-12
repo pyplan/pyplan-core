@@ -16,11 +16,11 @@ class XArrayEvaluator(BaseEvaluator):
     PAGESIZE = 100
     MAX_COLUMS = 5000
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         if isinstance(result, xr.DataArray):
-            return self.cubeEvaluate(result, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow)
+            return self.cubeEvaluate(result, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow, hideEmpty)
 
-    def cubeEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def cubeEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         sby = np.nansum
         if summaryBy == 'avg':
             sby = np.nanmean
@@ -98,6 +98,17 @@ class XArrayEvaluator(BaseEvaluator):
                             sby, otherDims).transpose(*(_rows + _columns))
             else:
                 tmp = filteredResult.transpose(*(_rows + _columns))
+
+        #Apply Hide Empty
+        if hideEmpty:
+            _filter =  tmp.fillna(0)==0
+            if hideEmpty in ["row","column"] and len(_rows) > 0 and len(_columns) > 0:
+                if hideEmpty=="row":
+                    tmp = tmp.where(~_filter.all(_columns[0]), drop=True)
+                else:
+                    tmp = tmp.where(~_filter.all(_rows[0]), drop=True)
+            else:
+                tmp = tmp.where(~_filter, drop=True)
 
         finalValues = tmp.values
         finalIndexes = []

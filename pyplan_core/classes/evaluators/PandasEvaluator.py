@@ -15,7 +15,7 @@ class PandasEvaluator(BaseEvaluator):
     PAGESIZE = 100
     MAX_COLUMS = 5000
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         sby = np.nansum
         if summaryBy == 'avg':
             sby = np.nanmean

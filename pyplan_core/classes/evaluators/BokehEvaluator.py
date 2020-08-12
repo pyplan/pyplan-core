@@ -9,7 +9,7 @@ from bokeh.models import Widget
 
 class BokehEvaluator(BaseEvaluator):
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         _result = result
 
         if isinstance(_result, Figure):  # create layout
