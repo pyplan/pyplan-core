@@ -6,6 +6,7 @@ import pandas as pd
 from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
+from pyplan_core.classes.ws.settings import ws_settings
 from pyplan_core.cubepy.cube import kindToString
 from pyplan_core import cubepy
 
@@ -94,6 +95,21 @@ class PandasEvaluator(BaseEvaluator):
                 aux = _rows
                 _rows = _columns
                 _columns = aux
+
+            if hideEmpty:
+                try:
+                    if hideEmpty in ["row", "both"]:
+                        filter_expresion = (dfResult != 0).any(axis=1)
+                        dfResult = dfResult.loc[filter_expresion]
+                    if hideEmpty in ["column", "both"]:
+                        filter_expresion = (dfResult != 0).any(axis=0)
+                        dfResult = dfResult.loc[:, filter_expresion]
+                except Exception as ex:
+                    try:
+                        nodeDic[nodeId].model.ws.sendMsg(str(ex), 'Error applying empty data filter',
+                                not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
+                    except:
+                        pass
 
             if bottomTotal and dfResult.shape[0] > 1:
                 row_total = sby(dfResult.values, axis=0)

@@ -9,6 +9,7 @@ from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.evaluators.PandasEvaluator import PandasEvaluator
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
+from pyplan_core.classes.ws.settings import ws_settings
 
 
 class XArrayEvaluator(BaseEvaluator):
@@ -99,16 +100,23 @@ class XArrayEvaluator(BaseEvaluator):
             else:
                 tmp = filteredResult.transpose(*(_rows + _columns))
 
-        #Apply Hide Empty
+        # Apply Hide Empty
         if hideEmpty:
-            _filter =  tmp.fillna(0)==0
-            if hideEmpty in ["row","column"] and len(_rows) > 0 and len(_columns) > 0:
-                if hideEmpty=="row":
-                    tmp = tmp.where(~_filter.all(_columns[0]), drop=True)
+            try:
+                _filter = tmp.fillna(0) == 0
+                if hideEmpty in ["row", "column"] and len(_rows) > 0 and len(_columns) > 0:
+                    if hideEmpty == "row":
+                        tmp = tmp.where(~_filter.all(_columns[0]), drop=True)
+                    else:
+                        tmp = tmp.where(~_filter.all(_rows[0]), drop=True)
                 else:
-                    tmp = tmp.where(~_filter.all(_rows[0]), drop=True)
-            else:
-                tmp = tmp.where(~_filter, drop=True)
+                    tmp = tmp.where(~_filter, drop=True)
+            except Exception as ex:
+                try:
+                    nodeDic[nodeId].model.ws.sendMsg(str(ex), 'Error applying empty data filter',
+                                                     not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
+                except:
+                    pass
 
         finalValues = tmp.values
         finalIndexes = []
