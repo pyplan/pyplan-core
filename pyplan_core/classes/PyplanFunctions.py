@@ -1328,14 +1328,14 @@ class Pandas_from_acc():
 
     # private class methods
     @classmethod
-    def __get_tables(rdb_file, encoding='utf8'):
+    def __get_tables(cls, rdb_file, encoding='utf8'):
         output = subprocess.check_output(['mdb-schema', rdb_file])
         lines = output.decode(encoding).splitlines()
         schema_ddl = "\n".join(l for l in lines if l and not l.startswith('-'))
         return Pandas_from_acc.TABLE_RE.findall(schema_ddl)
 
     @classmethod
-    def __extract_dtype(data_type):
+    def __extract_dtype(cls, data_type):
         # Note, this list is surely incomplete. But, I only had one .mdb file
         # at the time of creation. If you see a new data-type, patch-pull or just
         # open an issue.
@@ -1354,7 +1354,7 @@ class Pandas_from_acc():
             return None
 
     @classmethod
-    def __extract_defs(defs_str):
+    def __extract_defs(cls, defs_str):
         defs = {}
         lines = defs_str.splitlines()
         for line in lines:
