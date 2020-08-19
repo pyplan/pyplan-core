@@ -8,7 +8,7 @@ class IPythonEvaluator(BaseEvaluator):
     Display an IPython component using _repr_*_ methods
     """
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         return self.toHTML(result)
 
     def previewNode(self, nodeDic, nodeId):

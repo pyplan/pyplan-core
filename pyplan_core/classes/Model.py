@@ -234,7 +234,7 @@ class Model(object):
         else:
             return False
 
-    def evaluateNode(self, nodeId, dims=None, rows=None, columns=None, summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, nodeId, dims=None, rows=None, columns=None, summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         """Evaluate node. Call evaluator class for implement diferent evaluators."""
         if self.existNode(nodeId):
             result = None
@@ -246,7 +246,7 @@ class Model(object):
             if not result is None:
                 self.evaluationVersion += 1
                 evaluator = Evaluator.createInstance(result)
-                return evaluator.evaluateNode(result, self.nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow)
+                return evaluator.evaluateNode(result, self.nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow, hideEmpty)
         return ''
 
     def executeButton(self, nodeId):
@@ -1574,8 +1574,6 @@ class Model(object):
 
         max_mem = _read_int(
             '/sys/fs/cgroup/memory/memory.max_usage_in_bytes') / 1024/1024/1024
-
-        
 
         # get cpu usage
 

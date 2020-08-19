@@ -9,6 +9,7 @@ from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.evaluators.PandasEvaluator import PandasEvaluator
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
+from pyplan_core.classes.ws.settings import ws_settings
 
 
 class XArrayEvaluator(BaseEvaluator):
@@ -16,11 +17,11 @@ class XArrayEvaluator(BaseEvaluator):
     PAGESIZE = 100
     MAX_COLUMS = 5000
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         if isinstance(result, xr.DataArray):
-            return self.cubeEvaluate(result, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow)
+            return self.cubeEvaluate(result, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow, hideEmpty)
 
-    def cubeEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def cubeEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         sby = np.nansum
         if summaryBy == 'avg':
             sby = np.nanmean
@@ -98,6 +99,24 @@ class XArrayEvaluator(BaseEvaluator):
                             sby, otherDims).transpose(*(_rows + _columns))
             else:
                 tmp = filteredResult.transpose(*(_rows + _columns))
+
+        # Apply Hide Empty
+        if hideEmpty:
+            try:
+                _filter = tmp.fillna(0) == 0
+                if hideEmpty in ["row", "column"] and len(_rows) > 0 and len(_columns) > 0:
+                    if hideEmpty == "row":
+                        tmp = tmp.where(~_filter.all(_columns[0]), drop=True)
+                    else:
+                        tmp = tmp.where(~_filter.all(_rows[0]), drop=True)
+                else:
+                    tmp = tmp.where(~_filter, drop=True)
+            except Exception as ex:
+                try:
+                    nodeDic[nodeId].model.ws.sendMsg(str(ex), 'Error applying empty data filter',
+                                                     not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
+                except:
+                    pass
 
         finalValues = tmp.values
         finalIndexes = []

@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import inspect
 import jsonpickle
-from pyplan_core import cubepy 
+from pyplan_core import cubepy
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
 
@@ -48,8 +48,7 @@ class BaseEvaluator(object):
 
             return json.dumps(res)
 
-
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         if isinstance(result, np.ndarray):
             return self.createResult(result.tolist(), node=nodeDic[nodeId])
         elif callable(result):  # is function

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 class MatplotlibEvaluator(BaseEvaluator):
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         fig = result
         _img = ""
         if not isinstance(fig, MatplotlibFigure):
