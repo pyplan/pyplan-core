@@ -1,6 +1,5 @@
 .vscode/
 tests/pyplan-private-models
-tests/pyplan-private-models/
 tests/test_evaluate_private_mot.py
 tests/test_evaluate_private_sipme.py
 tests/test_evaluate_private_sippnor.py
