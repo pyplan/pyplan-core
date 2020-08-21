@@ -1651,7 +1651,7 @@ class Model(object):
         p = subprocess.Popen(split(cmd), stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, universal_newlines=True)
         nn = 0
-        while p.stdout is not None and nn < 240:
+        while p.stdout is not None and nn < 1200:
             # TODO: show feedback to ide using channels
             line = p.stdout.readline()
             if not line:
