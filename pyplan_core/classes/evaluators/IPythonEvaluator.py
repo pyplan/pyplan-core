@@ -22,7 +22,6 @@ class IPythonEvaluator(BaseEvaluator):
         return json.dumps(res)
 
     def toHTML(self, result):
-        _dir = dir(result)
         try:
             return result._repr_html_()
         except:
