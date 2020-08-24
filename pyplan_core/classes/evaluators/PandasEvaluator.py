@@ -13,7 +13,6 @@ from pyplan_core import cubepy
 
 class PandasEvaluator(BaseEvaluator):
 
-    PAGESIZE = 100
     MAX_COLUMS = 5000
 
     def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
@@ -31,6 +30,7 @@ class PandasEvaluator(BaseEvaluator):
             toRow = 100
         fromRow = int(fromRow)
         toRow = int(toRow)
+        pagesize = toRow - fromRow + 1
 
         _filters = {}
         _rows = []
@@ -107,7 +107,7 @@ class PandasEvaluator(BaseEvaluator):
                 except Exception as ex:
                     try:
                         nodeDic[nodeId].model.ws.sendMsg(str(ex), 'Error applying empty data filter',
-                                not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
+                                                         not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
                     except:
                         pass
 
@@ -130,7 +130,7 @@ class PandasEvaluator(BaseEvaluator):
                     data=new_values, columns=new_columns, index=dfResult.index)
                 dfResult = _df
 
-        if (dfResult.shape[0] > self.PAGESIZE):
+        if (dfResult.shape[0] > pagesize):
             if int(toRow) > dfResult.shape[0]:
                 toRow = dfResult.shape[0]
             pageInfo = {
