@@ -14,7 +14,6 @@ from pyplan_core.classes.ws.settings import ws_settings
 
 class XArrayEvaluator(BaseEvaluator):
 
-    PAGESIZE = 100
     MAX_COLUMS = 5000
 
     def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
@@ -36,6 +35,8 @@ class XArrayEvaluator(BaseEvaluator):
             toRow = 100
         fromRow = int(fromRow)
         toRow = int(toRow)
+        pagesize = toRow - fromRow + 1
+
 
         result = self.applyHierarchy(
             result, nodeDic, nodeId, dims, rows, columns, sby)
@@ -182,7 +183,7 @@ class XArrayEvaluator(BaseEvaluator):
             }
         elif len(_columns) == 0:
 
-            if (len(finalIndexes) > self.PAGESIZE):
+            if (len(finalIndexes) > pagesize):
                 pageInfo = {
                     "fromRow": int(fromRow),
                     "toRow": int(toRow),
@@ -204,7 +205,7 @@ class XArrayEvaluator(BaseEvaluator):
             onColumn = _columns[0]
             onRow = _rows[0]
 
-            if (len(finalIndexes) > self.PAGESIZE):
+            if (len(finalIndexes) > pagesize):
                 pageInfo = {
                     "fromRow": int(fromRow),
                     "toRow": int(toRow),
