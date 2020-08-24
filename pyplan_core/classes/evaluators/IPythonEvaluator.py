@@ -23,13 +23,22 @@ class IPythonEvaluator(BaseEvaluator):
 
     def toHTML(self, result):
         _dir = dir(result)
-        if "_repr_html_" in _dir:
+        try:
             return result._repr_html_()
-        elif "_repr_pretty_" in _dir:
-            return result._repr_pretty_()
-        elif "_repr_png_" in _dir:
-            return result._repr_png_()
-        elif "_repr_jpeg_" in _dir:
-            return result._repr_jpeg_()
-        elif "_repr_json_" in _dir:
-            return result._repr_json_()
+        except:
+            try:
+                 return result._repr_pretty_()
+            except:
+                try:
+                    return result._repr_png_()
+                except:
+                    try:
+                        return result._repr_jpeg_()
+                    except:
+                        try:
+                            return result._repr_json_()
+                        except:
+                            try:
+                                return str(result)
+                            except:
+                                return "Result cannot be displayed"
