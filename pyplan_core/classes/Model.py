@@ -472,14 +472,12 @@ class Model(object):
     def updateNodeIdInDic(self, oldNodeId, newNodeId):
         """Update node identifier on all dictionary."""
         if self.existNode(oldNodeId):
-            newNodeId = self.clearId(newNodeId)
             self.nodeDic[newNodeId] = self.nodeDic[oldNodeId]
             for node in self.findNodes('moduleId', oldNodeId):
                 node.moduleId = newNodeId
             for node in self.findNodes('originalId', oldNodeId):
                 node.originalId = newNodeId
                 node._definition = 'result = ' + str(newNodeId)
-
             del self.nodeDic[oldNodeId]
             return True
         else:
