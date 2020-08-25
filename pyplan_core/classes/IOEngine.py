@@ -42,11 +42,15 @@ class IOEngine(object):
 
     def updateNodeId(self, oldId, newId):
         for inputNode in self.inputs:
+            if inputNode == oldId:
+                inputNode = newId
             if self.node.model.existNode(inputNode):
                 self.node.model.getNode(
                     inputNode).ioEngine.updateOutputId(oldId, newId)
 
         for outputNode in self.outputs:
+            if outputNode == oldId:
+                outputNode = newId
             if self.node.model.existNode(outputNode):
                 self.node.model.getNode(
                     outputNode).ioEngine.updateInputId(oldId, newId)

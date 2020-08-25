@@ -283,11 +283,15 @@ class BaseNode(object):
         if value != self._identifier:
             if self._model.existNode(value):
                 raise ValueError("'The id '" + value + "' already exists")
+
+            if self.isCalc:
+                self.invalidate()
+
             if self._model.updateNodeIdInDic(self._identifier, value):
-                self.ioEngine.updateNodeId(self._identifier, value)
-                self._identifier = value
-                if self.isCalc:
-                    self.invalidate()
+                old_id = self._identifier
+                new_id = value
+                self._identifier = new_id
+                self.ioEngine.updateNodeId(old_id, new_id)
 
     @property
     def errorInDef(self):
@@ -668,8 +672,7 @@ class BaseNode(object):
         rx = re.compile(r"((?<!\w)(?<!\d)(?<!\.)" + re.escape(oldId) +
                         "(?!\d)(?!\w))(?=(?:[^\"]|[\"][^\"]*[\"])*$)")
         newDef = re.sub(rx, newId, self.definition)
-        self.definition = newDef
-        pass
+        self._definition = newDef
 
     def isCircular(self):
         """ Checks if the node is part of a cycle
