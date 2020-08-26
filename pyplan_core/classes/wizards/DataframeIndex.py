@@ -14,8 +14,10 @@ class Wizard(BaseWizard):
             currentDef = model.getNode(nodeId).definition
             newDef = self.getLastDefinition(currentDef)
             newDef = newDef + "\n# Set index"
+            
             reset_index = ""
-            if not isinstance(model.getNode(nodeId).result.index, pd.RangeIndex):
+            df = model.getNode(nodeId).result
+            if isinstance(df.index, pd.MultiIndex) or df.index.name is not None:  # df can be indexed by one column and it will not be a MultiIndex
                 reset_index = ".reset_index()"
 
             if not params is None and "columns" in params and len(params["columns"]) > 0:
