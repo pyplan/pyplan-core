@@ -992,17 +992,20 @@ class Model(object):
 
         return res
 
-    def copyAsValues(self, nodeId, asNewNode=False):
+    def copyAsValues(self, nodeId, asNewNode=False, aliasNode=None):
         """ Copy node as values """
         if self.existNode(nodeId):
             node = self.nodeDic[nodeId]
             if node.originalId:
-                return self.copyAsValues(node.originalId, asNewNode)
+                return self.copyAsValues(node.originalId, asNewNode, node)
 
             result = node.result
             if asNewNode:
-                newNode = self.createNode(moduleId=node.moduleId, nodeClass=node.nodeClass, x=int(
-                    node.x)+40, y=int(node.y)+60)
+                moduleId = aliasNode.moduleId if aliasNode is not None else node.moduleId
+                x = aliasNode.x if aliasNode is not None else node.x
+                y = aliasNode.y if aliasNode is not None else node.y
+                newNode = self.createNode(identifier=self.getNextIdentifier(f'{nodeId}_copy'),
+                                          moduleId=moduleId, nodeClass=node.nodeClass, x=int(x)+40, y=int(y)+60)
                 newNode.w = node.w
                 newNode.h = node.h
                 newNode.definition = node.definition
