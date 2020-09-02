@@ -496,7 +496,7 @@ class PandasEvaluator(BaseEvaluator):
         _result = self.ensureDataFrame(nodeDic[nodeId].result)
 
         if isinstance(_result, pd.DataFrame):
-            _result.to_csv(fileName, sep=columnFormat, encoding="iso-8859-1")
+            _result.to_csv(fileName, sep=columnFormat, encoding="utf-8-sig")
 
             return True
 
