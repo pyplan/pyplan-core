@@ -1009,7 +1009,7 @@ class Model(object):
                 newNode.w = node.w
                 newNode.h = node.h
                 newNode.definition = node.definition
-                newNode.title = f'{node.title} copy'
+                newNode.title = f'{node.title} copy' if node.title else node.identtifier
                 node = newNode
             evaluator = Evaluator.createInstance(result)
             return evaluator.copyAsValues(result, self.nodeDic, node.identifier)
