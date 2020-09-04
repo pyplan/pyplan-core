@@ -46,26 +46,21 @@ class IOModule(object):
     def importModule(self, moduleId, filename, importType):
         if importType == "0":  # merge
             return self.mergeModule(moduleId, filename)
-        elif importType == "2":  # switch
+        if importType == "2":  # switch
             return self.switchModule(moduleId, filename)
-        else:
-            return False
+        return False
 
     def mergeModule(self, moduleId, filename):
-        res = False
         if self.model.existNode(moduleId):
             opened = {}
             with open(filename, 'r') as f:
                 opened = jsonpickle.decode(f.read())
                 f.close()
-            pass
             self.model._isLoadingModel = True
 
             try:
                 for nn, obj in enumerate(opened["nodeList"]):
-
                     if obj["nodeClass"] != "model":
-
                         if self.model.existNode(obj["identifier"]):
                             node = self.model.getNode(obj["identifier"])
                             node.definition = obj["definition"]
@@ -91,22 +86,15 @@ class IOModule(object):
                  for nod in self.model.nodeDic]
             finally:
                 self.model._isLoadingModel = False
-
-            res = True
-
-        else:
-            raise ValueError('Module base not found')
-
-        return res
+            return True
+        raise ValueError('Module base not found')
 
     def switchModule(self, moduleId, filename):
-        res = False
         if self.model.existNode(moduleId):
             opened = {}
             with open(filename, 'r') as f:
                 opened = jsonpickle.decode(f.read())
                 f.close()
-            pass
 
             if len(opened["nodeList"]) > 0:
                 mainModule = opened["nodeList"][0]
@@ -136,10 +124,5 @@ class IOModule(object):
                     self.model.nodeDic[nodeId].generateIO()
             finally:
                 self.model._isLoadingModel = False
-
-            res = True
-
-        else:
-            raise ValueError('Module base not found')
-
-        return res
+            return True
+        raise ValueError('Module base not found')
