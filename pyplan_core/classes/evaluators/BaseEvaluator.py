@@ -189,7 +189,7 @@ class BaseEvaluator(object):
         import itertools
         allCombinations = itertools.product(*dimValues)
 
-        with open(fileName, 'w') as f:
+        with open(fileName, "w", encoding="utf-8-sig") as f:
             # headers
             f.write(columnFormat.join(realIndexes) + "\n")
             # data
