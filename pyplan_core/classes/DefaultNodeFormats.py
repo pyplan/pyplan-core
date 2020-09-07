@@ -32,7 +32,7 @@ default_formats = {
     "decision": {
         "color": "#4cffa6",
         "nodeClass": "decision",
-        "definition": "result = selector(['Item 1','Item 2','Item 3'],1,False)",
+        "definition": "result = pp.selector(['Item 1','Item 2','Item 3'],1,False)",
         "nodeInfo": {
             "fill": 1,
             "showBorder": 1,
