@@ -423,35 +423,22 @@ class BaseNode(object):
         self.ioEngine.updateOnDeleteNode()
 
     def silentInvalidate(self):
+        """Invalidate node result but don't search for invalidate outputs"""
         self._isCalc = False
         self.profileParent = None
         self._result = None
 
     def invalidate(self, fromCircularNode=False):
         """Invalidate node result"""
-        self._isCalc = False
-        self.profileParent = None
-        self._result = None
-        if self.isCircular() and not fromCircularNode:
-            circularNodes = self.getSortedCyclicDependencies()
-            for node in circularNodes:
-                if node != self.identifier:
-                    if self._model.existNode(node):
-                        self._model.getNode(node).invalidate(
-                            fromCircularNode=True)
+        self.silentInvalidate()
         self.invalidateOutputs()
 
     def invalidateOutputs(self):
         """Invalidate outputs of this node"""
-        isCircular = self.isCircular()
-        for node in self.ioEngine.outputs:
-            if not node is None:
-                if self._model.existNode(node):
-                    if isCircular and self._model.getNode(node).isCircular() and self.identifier in self._model.getNode(node).getSortedCyclicDependencies():
-                        pass
-                    else:
-                        if self._model.getNode(node).isCalc:
-                            self._model.getNode(node).invalidate()
+        all_outputs = self.getFullOutputs()
+        for node_id in all_outputs:
+            if self.model.existNode(node_id):
+                self.model.getNode(node_id).silentInvalidate()
 
     def generateIO(self):
         """Generate inputs and outputs"""
@@ -703,9 +690,24 @@ class BaseNode(object):
             _node = res[nn]
             if self.model.existNode(_node) and self.model.getNode(_node).ioEngine.inputs:
                 for _inputId in self.model.getNode(_node).ioEngine.inputs:
-                    input_node = self.model.getNode(_inputId)
                     if not _inputId in res:
                         res.append(_inputId)
+            nn += 1
+        return res
+
+    def getFullOutputs(self):
+        """
+        Return list of all node outputs and outputs of outputs
+        """
+        res = [self.identifier if self.originalId is None else self.originalId]
+        nn = 0
+        while nn < len(res):
+            _node = res[nn]
+            if self.model.existNode(_node) and self.model.getNode(_node).ioEngine.outputs:
+                node_outputs = self.model.getNode(_node).ioEngine.outputs
+                for output_id in node_outputs:
+                    if not output_id in res:
+                        res.append(output_id)
             nn += 1
         return res
 
