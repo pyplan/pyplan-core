@@ -700,6 +700,7 @@ class BaseNode(object):
         Return list of all node outputs and outputs of outputs
         """
         res = [self.identifier if self.originalId is None else self.originalId]
+        res += [node.identifier for node in self.model.findNodes('originalId', res[0])]
         nn = 0
         while nn < len(res):
             _node = res[nn]
