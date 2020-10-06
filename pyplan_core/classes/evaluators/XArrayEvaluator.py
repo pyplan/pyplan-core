@@ -611,9 +611,10 @@ class XArrayEvaluator(BaseEvaluator):
                     node_id = dimension
                     if not hierarchyDic is None and dimension in hierarchyDic:
                         node_id = hierarchyDic[dimension]
-
                     reindex_dic[dimension] = nodeDic[node_id].result.values
-
+                elif dimension in dataArray.coords:
+                    reindex_dic[dimension] = dataArray.coords[dimension].values
+                    
             _db = _da.reindex(reindex_dic)
 
             return _db
