@@ -272,6 +272,7 @@ class PureXArrayDynamic(BaseDynamic):
         dynamicIndex = None
         nodesInCyclic = []  # nodeList TODO: Determinar orden de nodos
         initialValues = {}
+        indexDic = {}
         shift = -1
 
         for _nodeId in nodeList:
@@ -288,6 +289,8 @@ class PureXArrayDynamic(BaseDynamic):
                     if not _vart_1 in dynamicVars:
                         dynamicVars.append(_vart_1)
                     dynamicIndex = node.model.getNode(_arr[1].strip()).result
+                    if not dynamicIndex.name in indexDic:
+                        indexDic[dynamicIndex.name] = _nodeId
                     shift = int(_arr[2])
                     if len(_arr) > 3:
                         initialValues[_nodeId] = "result = " + _arr[3].strip()
@@ -311,6 +314,7 @@ class PureXArrayDynamic(BaseDynamic):
             "dynamicIndex": dynamicIndex,
             "nodesInCyclic": nodesInCyclic,
             "initialValues": initialValues,
+            "indexDic": indexDic,
             "shift": shift
         }
 
