@@ -367,7 +367,7 @@ class Model(object):
         nodeList.sort(key=lambda x: int(x.z))
         for node in nodeList:
             res['nodes'].append(node.toObj(
-                exceptions=['definition'], fillDefaultProperties=True))
+                exceptions=['definition', 'description'], fillDefaultProperties=True))
         return res
 
     def getBreadcrumb(self, moduleId=None):
