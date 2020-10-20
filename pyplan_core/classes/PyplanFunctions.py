@@ -420,7 +420,7 @@ class PyplanFunctions(object):
             This function automatically generates pickles from every named range in excel file
             when excel parameter is a string.
         """
-        
+
         # When excel param is a string, this function tries to read from automatically generated
         # pickles for every named range if they are newer than the Excel file (its modified date).
         # If they do not exist or are outdated, tries to generate one pickle for every named range in
@@ -430,7 +430,6 @@ class PyplanFunctions(object):
         #   - it must have named ranges.
         # Otherwise, it should load the spreadsheet using openpyxl library and then read the sheet,
         # range or cellrange.
-
 
         if isinstance(excel, str):
             if not os.path.isfile(excel):
@@ -1163,41 +1162,42 @@ class PyplanFunctions(object):
             flag_filepath = os.path.join(targetDir, flagFilename)
             with open(flag_filepath, 'w'):
                 pass
-
+            
             try:
                 for item in workbook.defined_names.definedName:
-                    if not item.is_external and item.type == 'RANGE' and item.attr_text and '!$' in item.attr_text:
-                        target_filepath = os.path.join(targetDir, f'{item.name}.pkl')
-                        if os.path.isfile(target_filepath):
-                            os.remove(target_filepath)
+                    try:
+                        if not item.is_external and item.type == 'RANGE' and item.attr_text and '!$' in item.attr_text:
+                            target_filepath = os.path.join(targetDir, f'{item.name}.pkl')
+                            if os.path.isfile(target_filepath):
+                                os.remove(target_filepath)
 
-                        dests = item.destinations
-                        for title, coord in dests:
-                            if title in workbook:
-                                ws = workbook[title]
-                                rangeToRead = ws[coord]
-                                if not isinstance(rangeToRead, tuple):
-                                    rangeToRead = ((rangeToRead,),)
+                            dests = item.destinations
+                            for title, coord in dests:
+                                if title in workbook:
+                                    ws = workbook[title]
+                                    rangeToRead = ws[coord]
+                                    if not isinstance(rangeToRead, tuple):
+                                        rangeToRead = ((rangeToRead,),)
 
-                                cols = []
-                                values = []
-                                for index, row in enumerate(rangeToRead):
-                                    if index == 0:
-                                        cols = [str(c.value) for c in row]
-                                    else:
-                                        values.append([c.value for c in row])
-                                nn = 0
-                                _finalCols = []
-                                for _col in cols:
-                                    if _col is None:
-                                        _finalCols.append(f'Unnamed{str(nn)}')
-                                        nn += 1
-                                    else:
-                                        _finalCols.append(_col)
-                                df = pd.DataFrame(values, columns=_finalCols).dropna(how='all')
-                                df.to_pickle(target_filepath, compression='gzip')
-            except:
-                pass
+                                    cols = []
+                                    values = []
+                                    for index, row in enumerate(rangeToRead):
+                                        if index == 0:
+                                            cols = [str(c.value) for c in row]
+                                        else:
+                                            values.append([c.value for c in row])
+                                    nn = 0
+                                    _finalCols = []
+                                    for _col in cols:
+                                        if _col is None:
+                                            _finalCols.append(f'Unnamed{str(nn)}')
+                                            nn += 1
+                                        else:
+                                            _finalCols.append(_col)
+                                    df = pd.DataFrame(values, columns=_finalCols).dropna(how='all')
+                                    df.to_pickle(target_filepath, compression='gzip')
+                    except Exception as e:
+                        print(f"Could not generate pkl for range '{item.name}'. Error: {e}")
             finally:
                 os.remove(flag_filepath)
         
