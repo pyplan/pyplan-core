@@ -503,7 +503,7 @@ class BaseNode(object):
                         circularNodes) + ". Please use the 'pp.dynamic' function")
                 elif 'indexDic' in params and len(params['indexDic']) > 1:
                     raise ValueError(
-                        f'Multiple indexes were found in the use of dynamic. Indexes: {",".join(params["indexDic"].keys())}. Nodes involved: {",".join(circularNodes)}')
+                        f'Multiple indices were found using dynamic. Indexes: {",".join(params["indexDic"].keys())}. Nodes involved: {",".join(circularNodes)}')
 
                 self.dynamicEvaluator.circularEval(self, params)
             else:
