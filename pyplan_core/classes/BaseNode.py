@@ -500,7 +500,11 @@ class BaseNode(object):
 
                 if params['dynamicIndex'] is None:
                     raise ValueError("Cyclic dependency detected between nodes: " + ",".join(
-                        circularNodes) + ".\nPlease use the 'dynamic' function")
+                        circularNodes) + ". Please use the 'pp.dynamic' function")
+                elif 'indexDic' in params and len(params['indexDic']) > 1:
+                    raise ValueError(
+                        f'Multiple indices were found using dynamic. Indexes: {",".join(params["indexDic"].keys())}. Nodes involved: {",".join(circularNodes)}')
+
                 self.dynamicEvaluator.circularEval(self, params)
             else:
                 from_circular_evaluator = self._bypassCircularEvaluator
@@ -700,7 +704,8 @@ class BaseNode(object):
         Return list of all node outputs and outputs of outputs
         """
         res = [self.identifier if self.originalId is None else self.originalId]
-        res += [node.identifier for node in self.model.findNodes('originalId', res[0])]
+        res += [node.identifier for node in self.model.findNodes(
+            'originalId', res[0])]
         nn = 0
         while nn < len(res):
             _node = res[nn]
