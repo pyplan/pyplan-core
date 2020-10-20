@@ -102,16 +102,15 @@ class XArrayEvaluator(BaseEvaluator):
                 tmp = filteredResult.transpose(*(_rows + _columns))
 
         # Apply Hide Empty
-        if hideEmpty:
+        if hideEmpty and (len(_columns) > 0 or len(_rows) > 0):
             try:
-                _filter = tmp.fillna(0) == 0
-                if hideEmpty in ["row", "column"] and len(_rows) > 0 and len(_columns) > 0:
-                    if hideEmpty == "row":
-                        tmp = tmp.where(~_filter.all(_columns[0]), drop=True)
-                    else:
-                        tmp = tmp.where(~_filter.all(_rows[0]), drop=True)
-                else:
-                    tmp = tmp.where(~_filter, drop=True)
+                _filter = tmp.fillna(0) != 0
+                if hideEmpty in ["row", "both"]:
+                    filter_expression = _filter.any(_columns[0]) if len(_columns) > 0 else _filter
+                    tmp = tmp.where(filter_expression, drop=True)
+                if hideEmpty in ["column", "both"]:
+                    filter_expression = _filter.any(_rows[0]) if len(_rows) > 0 else _filter
+                    tmp = tmp.where(filter_expression, drop=True)
             except Exception as ex:
                 try:
                     nodeDic[nodeId].model.ws.sendMsg(str(ex), 'Error applying empty data filter',
