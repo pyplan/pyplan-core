@@ -193,13 +193,10 @@ class BaseEvaluator(object):
             # headers
             f.write(columnFormat.join(realIndexes) + "\n")
             # data
-            nn = 0
-            for item in allCombinations:
-                aa = 0
+            for nn, item in enumerate(allCombinations):
                 f.write(columnFormat.join(str(e) for e in item) + columnFormat)
                 f.write(str(data["values"][nn]).replace(
                     ".", decimalSep) + "\n")
-                nn += 1
 
             f.close()
 
