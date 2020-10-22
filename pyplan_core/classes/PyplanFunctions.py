@@ -1,14 +1,17 @@
+import importlib
+import ntpath
+import os
+import re
+import subprocess
+import time
+
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
-import re
-import os
-import importlib
-import subprocess
-import ntpath
 from openpyxl import load_workbook
 
 from .ws.settings import ws_settings
+
 try:
     from StringIO import StringIO as BytesIO
 except ImportError:
@@ -445,7 +448,7 @@ class PyplanFunctions(object):
 
                 # Read from pickle if it is newer than Excel file
                 if os.path.isfile(picklepath) and os.path.getmtime(picklepath) >= os.path.getmtime(filepath):
-                    return self._read_pickle_df(filepath=picklepath, indexes=indexes)
+                    return self.__read_pickle_df(filepath=picklepath, indexes=indexes)
                 
                 else:
                     wb = load_workbook(filepath, data_only=True, read_only=True)
@@ -457,18 +460,18 @@ class PyplanFunctions(object):
                         flag_filepath = os.path.join(target_dir, flag_filename)
 
                         # Clean potentially old flag files
-                        self._remove_old_file(filepath=flag_filepath, maxElapsedMinutes=60)
+                        self.__remove_old_file(filepath=flag_filepath, maxElapsedMinutes=60)
 
                         # If flag file exists (optimization is running), read directly from Excel
                         if os.path.isfile(flag_filepath):
                             return self.pandas_from_excel(wb, sheetName, namedRange, cellRange, indexes)
                         else:
-                            self._generate_pkl_from_excel(
+                            self.__generate_pkl_from_excel(
                                 workbook=wb, filepath=filepath, targetDir=target_dir, 
                                 maxFileSizeMB=100, flagFilename=flag_filename)
                             # Read file
                             if os.path.isfile(picklepath):
-                                return self._read_pickle_df(filepath=picklepath, indexes=indexes)
+                                return self.__read_pickle_df(filepath=picklepath, indexes=indexes)
                             else:
                                 return self.pandas_from_excel(wb, sheetName, namedRange, cellRange, indexes)
                 
@@ -1140,7 +1143,7 @@ class PyplanFunctions(object):
         """Class to manage access databases"""
         return Pandas_from_acc()
     
-    def _generate_pkl_from_excel(self, workbook, filepath, targetDir, maxFileSizeMB=None, flagFilename='flag.tmp'):
+    def __generate_pkl_from_excel(self, workbook, filepath, targetDir, maxFileSizeMB=None, flagFilename='flag.tmp'):
         """Generate compressed pickle from excel file
            workbook: openpyxl workbook
            filepath: full file path
@@ -1201,23 +1204,143 @@ class PyplanFunctions(object):
             finally:
                 os.remove(flag_filepath)
         
-    def _remove_old_file(self, filepath, maxElapsedMinutes=1):
+    def __remove_old_file(self, filepath, maxElapsedMinutes=1):
         """Deletes file if its modified date is older than current date minus maxElapsedMinutes
         """
 
         if os.path.isfile(filepath):
-            import time
             # Dates are expressed in seconds since epoch (floats)
             modified_date = os.path.getmtime(filepath)
             min_modified_date = time.time() - (maxElapsedMinutes * 60)
             if modified_date < min_modified_date:
                 os.remove(filepath)
     
-    def _read_pickle_df(self, filepath, indexes=None):
+    def __read_pickle_df(self, filepath, indexes=None):
         df = pd.read_pickle(filepath, compression='gzip')
         if not indexes is None:
             df.set_index(indexes, inplace=True)
         return df
+    
+    def get_nested_lists_shape(self, lst, shape=()):
+        """Returns a tuple with the shape of nested lists similarly to numpy's shape.
+
+        lst: the nested list
+        shape: the shape up to the current recursion depth
+        """
+
+        if not isinstance(lst, list):
+            # base case
+            return shape
+
+        # peek ahead and assure all lists in the next depth have the same length
+        if isinstance(lst[0], list):
+            l = len(lst[0])
+            if not all(len(item) == l for item in lst):
+                raise ValueError('Not all lists have the same length')
+
+        shape += (len(lst), )
+
+        # recurse
+        shape = self.get_nested_lists_shape(lst[0], shape)
+
+        return shape
+    
+    def __concat_dataarrays_over_one_dim(self, valuesList, dim):
+        """Concatenates Xarray DataArrays along a new dimension, broadcasting by all possible
+        dimensions
+
+        valuesList: list of DataArrays, int, str, float. At least one of them must be DataArray
+        dim: Pandas Index with same length as valuesList
+        """
+        
+        # Error handling
+        if not isinstance(valuesList, list):
+            raise ValueError('valuesList must be a list')
+        if not any([isinstance(v, xr.DataArray) for v in valuesList]):
+            raise ValueError('At least one of the objects in valuesList must be a Xarray DataArray')
+        if not isinstance(dim, pd.Index):
+            raise ValueError('dim must be a pandas Index')
+        valuesListShape = self.get_nested_lists_shape(valuesList)
+        dimShape = (len(dim.values),)
+        if valuesListShape != dimShape:
+            raise ValueError(f'Shape of valuesList {valuesListShape} is not equal to shape of dim {dimShape}')
+        
+        # Get all possible dimensions
+        all_dims_names, all_dims_indexes = [], {}
+        for v in valuesList:
+            if isinstance(v, xr.DataArray):
+                dims_v = v.dims
+                indexes_v = v.indexes
+                for d in dims_v:
+                    if d not in all_dims_names:
+                        all_dims_names.append(d)
+                        all_dims_indexes.update({d: indexes_v[d]})
+        
+        newValuesList = []
+        for v in valuesList:
+            # Add dimensions not present in original DataArray
+            if isinstance(v, xr.DataArray):
+                dims_v = v.dims
+                if not all(d in dims_v for d in all_dims_names):
+                    for d in all_dims_names:
+                        if d not in dims_v:
+                            v = v.expand_dims({d: all_dims_indexes[d].values})
+            # When value is a scalar (str, int, float, usually)
+            else:
+                v = xr.DataArray(v, list(all_dims_indexes.values()))
+            
+            newValuesList.append(v)
+                    
+        return xr.concat(newValuesList, dim=dim)
+    
+    def concat_dataarrays(self, valuesList, dim):
+        """Concatenates Xarray DataArrays along one or two new dimensions, broadcasting
+        by all possible dimensions
+
+        valuesList: list or list of lists of DataArrays, int, str, float. At least one
+        of them must be a DataArray object
+        dim: Pandas Index or list of Pandas Indexes with same shape as valuesList
+
+        Ex.
+            pp.concat_dataarrays(
+                valuesList=[node1, node2, node3],
+                dim=three_items_index)
+            pp.concat_dataarrays(
+                valuesList=['String Example', node2, 0],
+                dim=three_items_index)
+            pp.concat_dataarrays(
+                valuesList=[[node1, node2, node3], [node4, node5, node6]],
+                dim=[two_items_index, three_items_index])
+        """
+
+        valuesListShape = self.get_nested_lists_shape(valuesList)
+        if isinstance(dim, list):
+            # Error handling
+            # Check length
+            if len(dim) > 2:
+                raise ValueError("Can only concat along 1 or 2 dimensions")
+            if len(valuesListShape) == 1:
+                raise ValueError("valuesList must be list of lists if dim is a list")
+            
+            # Ensure shapes are the same
+            if valuesListShape[0] == 1:
+                valuesListShape = (valuesListShape[1],)  # to make it comparable to dimShape
+            dimShape = tuple(len(d) for d in dim)
+            if not (valuesListShape == dimShape):
+                raise ValueError(
+            f"Shape of valuesList {valuesListShape} is not equal to shape of dim {dimShape}")
+            
+            if len(dimShape) == 2:
+                # Broadcast and concat along each dim
+                das = []
+                for lst in valuesList:
+                    da = self.__concat_dataarrays_over_one_dim(valuesList=lst, dim=dim[1])
+                    das.append(da)
+                return self.__concat_dataarrays_over_one_dim(valuesList=das, dim=dim[0])
+            else:
+                return self.__concat_dataarrays_over_one_dim(valuesList=valuesList[0], dim=dim[0])
+        else:
+            return self.__concat_dataarrays_over_one_dim(valuesList=valuesList, dim=dim)
 
 
 class Selector(object):
