@@ -1717,12 +1717,6 @@ class Model(object):
                         _el = _element[5:_element.find(' import ')].strip()
                         _imports[self._check_import_function(_el)] = {'import_name': self._check_import_function(
                             _el), 'import_type': 'from', 'name': None, 'version': None}
-                    elif self.ws:
-                        self.ws.sendMsg(_element, 'Could not find import from',
-                                        not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
-                elif self.ws:
-                    self.ws.sendMsg(_element, 'Element not recognized',
-                                    not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
 
             _installed_libs = self._check_installed_libraries()
             for key in _imports.keys():
