@@ -401,7 +401,7 @@ class PandasEvaluator(BaseEvaluator):
             # apply reindex only if have 1 dimension. groupby work fine with sort=False with two or more dims.
             if len(_cols) == 1:
                 _groupedDF = _groupedDF.reindex(
-                    index=_result.index.get_level_values(_cols[0]).unique().to_list())
+                    index=_filteredResult.index.get_level_values(_cols[0]).unique().to_list())
 
             if useCustomFillMeasures:
                 self._applyGroupMeasures(_groupedDF, _result.groupMeasures)
