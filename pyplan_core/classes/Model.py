@@ -366,8 +366,9 @@ class Model(object):
         nodeList = self.findNodes('moduleId', moduleId)
         nodeList.sort(key=lambda x: int(x.z))
         for node in nodeList:
+            exceptions = ['definition'] if node.nodeClass == 'text' else ['definition', 'description']
             res['nodes'].append(node.toObj(
-                exceptions=['definition', 'description'], fillDefaultProperties=True))
+                exceptions=exceptions, fillDefaultProperties=True))
         return res
 
     def getBreadcrumb(self, moduleId=None):
