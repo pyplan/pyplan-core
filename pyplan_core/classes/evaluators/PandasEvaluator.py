@@ -244,7 +244,9 @@ class PandasEvaluator(BaseEvaluator):
                     if self.isIndexed(result):
                         prepared_result = self.prepareDataframeForTable(
                             node.result)
-                        for index in prepared_result.index.levels:
+                        prepared_result_index = prepared_result.index
+                        indexes = [i for i in prepared_result_index.levels] if isinstance(prepared_result_index, pd.MultiIndex) else [prepared_result_index]
+                        for index in indexes:
                             if index.name == data.index_id:
                                 res = self.checkDateFormat(
                                     index.values).tolist()
@@ -276,7 +278,9 @@ class PandasEvaluator(BaseEvaluator):
                     if self.isIndexed(node.result):
                         prepared_result = self.prepareDataframeForTable(
                             node.result)
-                        for index in prepared_result.index.levels:
+                        prepared_result_index = prepared_result.index
+                        indexes = [i for i in prepared_result_index.levels] if isinstance(prepared_result_index, pd.MultiIndex) else [prepared_result_index]
+                        for index in indexes:
                             if index.name == indexId:
                                 res = "S"
                                 break
