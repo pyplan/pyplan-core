@@ -86,8 +86,7 @@ class Model(object):
         default_formats
         if nodeClass in default_formats:
             return deepcopy(default_formats[nodeClass])
-        else:
-            return None
+        return None
 
     def getCurrentModelPath(self):
         if self.existNode('current_path'):
@@ -229,10 +228,7 @@ class Model(object):
         return res
 
     def isNodeInScenario(self, nodeId):
-        if nodeId in self._scenarioDic:
-            return True
-        else:
-            return False
+        return nodeId in self._scenarioDic
 
     def evaluateNode(self, nodeId, dims=None, rows=None, columns=None, summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
         """Evaluate node. Call evaluator class for implement diferent evaluators."""
@@ -263,7 +259,6 @@ class Model(object):
     def previewNode(self, nodeId, debugMode=""):
         """Perform preview of a node"""
         try:
-
             result = None
             if self.existNode(nodeId):
                 if debugMode:
@@ -298,7 +293,6 @@ class Model(object):
         """Evaluate node. Used for pivotgrid"""
         nodeId = query['cube']
         if self.existNode(nodeId):
-
             result = None
             if nodeId in self._scenarioDic:
                 result = self._scenarioDic[nodeId]
@@ -481,8 +475,7 @@ class Model(object):
                 node._definition = 'result = ' + str(newNodeId)
             del self.nodeDic[oldNodeId]
             return True
-        else:
-            return False
+        return False
 
     def setNodeProperties(self, nodeId, properties):
         """Update properties of a node"""
@@ -1340,14 +1333,14 @@ class Model(object):
             if not os.path.isdir(user_lib_path):
                 os.makedirs(user_lib_path, exist_ok=True)
             # copy base venv folders
-            os.system(f'cp -r -u {venv_path}-bkp/* {user_lib_path}')
+            os.system(f'cp -r -u {venv_path}-bkp/* "{user_lib_path}"')
         except:
             pass
 
         # create symlink from user /public site-package
         if os.path.isdir(user_lib_path):
             os.system(f'rm -rf {venv_path}')
-            os.system(f'ln -s -f {user_lib_path} {venv_path}')
+            os.system(f'ln -s -f "{user_lib_path}" {venv_path}')
 
     def applyBackwardCompatibility(self):
         # update old selector definition
