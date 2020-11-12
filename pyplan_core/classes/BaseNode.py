@@ -543,7 +543,7 @@ class BaseNode(object):
                                     if (m.endpos > m.regs[0][1]+5) and ((m.string[m.regs[0][1]:m.regs[0][1]+5] == '.node') or (m.string[m.regs[0][1]:m.regs[0][1]+8] == '.timeit('))
                                     else
                                     (node
-                                     if (m.string[m.regs[0][0]-1:m.regs[0][0]+len(node)] == ('.'+node))
+                                     if (m.string[m.regs[0][0]-1:m.regs[0][0]+len(node)] == ('.'+node)) or (m.string[m.regs[0][0]-7:m.regs[0][0]] == 'import ') or (m.string[m.regs[0][0]-5:m.regs[0][0]] == 'from ')
                                      else "getCalcNode('"+node+"')"
                                      )
                                 )
