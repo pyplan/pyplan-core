@@ -420,6 +420,11 @@ class Model(object):
                 if new_definition:
                     node.definition = new_definition
 
+    def getSelectorValue(self, nodeId):
+        """Return selector value if node is of type selector"""
+        if self.isSelector(nodeId):
+            return self.getNode(nodeId).result.value
+
     def release(self):
         """Release model. Free all resources """
         if not self._modelNode is None:
