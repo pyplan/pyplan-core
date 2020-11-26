@@ -27,10 +27,12 @@ class PyplanFunctions(object):
         self.model = None
 
     def set_domain(self, dataArray, domainDic, defaultValue=None):
-        """ Reindex the dataArray by applying the indices of the domainDic param
-            Ex. 
-                pp.set_domain(da,{"time":time_idex, "products":product_index})
+        """Reindexes the dataArray by applying the indices of the domainDic param
+           
+           Ex. 
+               pp.set_domain(da,{"time":time_idex, "products":product_index})
         """
+
         _da = dataArray
         for key in domainDic:
             _da = _da.reindex({key: domainDic[key].values})
@@ -40,7 +42,10 @@ class PyplanFunctions(object):
         return _da
 
     def build_report(self, values, name="Report", report_index=None):
-        """ DEPRECATED. Use the create_report function instead """
+        """DEPRECATED. Use the create_report function instead
+           Concatenates the values list of nodes along the report_index dimension
+        """
+
         _titles = [str(xx.name) for xx in values]
         _index = None
         if report_index is None:
@@ -51,10 +56,12 @@ class PyplanFunctions(object):
         return xr.concat(values, _index)
 
     def create_dataarray(self, value, coords, dtype=None):
-        """ Creates a dataarray using an atomic value distributed along all dimensions 
-            Ex. 
-                pp.create_dataarray(1., coords=[time_idex, product_index])
+        """Creates a dataarray using an atomic value distributed along all dimensions 
+           
+           Ex. 
+               pp.create_dataarray(1., coords=[time_idex, product_index])
         """
+
         _data = np.full(tuple([(len(x)) for x in coords]), value, dtype=dtype)
         return xr.DataArray(_data, coords)
 
@@ -65,12 +72,14 @@ class PyplanFunctions(object):
         compareType: exact=1, start_with=2, end_with=3, contain=4  
         caseSensitive: able to differentiate between uppercase and lowercase (by default True)
 
-        If param1 is a scalar (numeric or str) and param2 is an index:  return a dataArray indexed by param2 with True on ocurrences of param2
+        If param1 is a scalar (numeric or str) and param2 is an index:  return a dataArray indexed by param2 with True
+        on ocurrences of param2
             Ex. pp.find("te", region, cp.end_with)
-        If param1 is an index and param2 is an index too:  return a dataArray indexed by param1 and param2 with True on ocurrences of param1 on param2
+        If param1 is an index and param2 is an index too:  return a dataArray indexed by param1 and param2 with True
+        on ocurrences of param1 on param2
             Ex. pp.find(subregion, region, cp.contain)
-
         """
+
         def _internalFn(item, value):
             if not isinstance(item, str):
                 item = str(item)
@@ -111,10 +120,12 @@ class PyplanFunctions(object):
             return _res
 
     def apply_fn(self, obj, applyFn, *args):
-        """ Apply "applyFn" to "obj" where obj can be DataArray or Index
-            Ex.
-                pp.apply(dataArray, node_function)
+        """Applies "applyFn" to "obj" where obj can be DataArray or Index
+        
+           Ex.
+               pp.apply(dataArray, node_function)
         """
+
         vfn = np.vectorize(applyFn)
         if isinstance(obj, pd.Index):
             return pd.Index(np.unique(vfn(obj.values, *args)))
@@ -123,19 +134,23 @@ class PyplanFunctions(object):
         return None
 
     def subset(self, cube):
-        """Returns an index with the elements of the index for which cube is true. The function is used to create a new index that is a subset of an existing index.
-            Ex. pp.subset(sales>0)
+        """Returns an index with the elements of the index for which cube is true. The function is used to create a new
+           index that is a subset of an existing index.
+        
+           Ex. pp.subset(sales>0)
         """
+
         cond = cube > 0
         values = cond.coords[cond.dims[0]].values[cond.values]
         return pd.Index(values)
 
     def split_text(self, param1, separator, part=None):
+        """Returns a DataArray object with text values formed by splitting the elements of param1 text values at each 
+           occurrence of separator "separator". 
+           The DataArray will have the original dimension plus a new dimension 'Parts' of length (number of separators + 1). 
+           All text values must have the same number of separators separator.        
         """
-            Description: Returns a DataArray object with text values formed by splitting the elements of param1 text values at each occurrence of separator "separator". 
-            The DataArray will have the original dimension plus a new dimension 'Parts' of length (number of separators + 1). 
-            All text values must have the same number of separators separator.        
-        """
+
         if isinstance(param1, pd.Index):
             param1 = xr.DataArray(param1.values, [param1])
 
@@ -160,19 +175,20 @@ class PyplanFunctions(object):
         return _res
 
     def get_pos(self, index):
+        """Returns a DataArray with indexed by index and its positions as values
+
+           Ex. pp.get_pos(time_index)
         """
-            Return datarray with pd.index and yours positions as values
-            Ex. pp.get_pos(time_index)
-        """
+
         return xr.DataArray(range(0, len(index)), [index])
 
     def concat_index(self, *args):
+        """Concatenates two or more indexes and/or atomic values and returns a single new index
+
+           Ex.
+               pp.concatIndex(index1,index2,index3,value1,value2)
         """
-        Concatenates two or more indexes and/or atomic values into a single new index
-        Return: new index
-            Ex.
-                pp.concatIndex(index1,index2,index3,value1,value2)
-        """
+
         _list = []
         for arg in args:
             if isinstance(arg, pd.Index):
@@ -185,15 +201,15 @@ class PyplanFunctions(object):
         return pd.Index(seripandas.unique())
 
     def linear_depreciation(self, investments, usefulLife, timeIndex, includeInCurrentMonth=False, timeIndexFormat='%Y.%m'):
-        """
-            Returns the straight-line depreciation of dataArray investments over its usefulLife.
+        """Returns the straight-line depreciation of dataArray investments over its usefulLife.
 
-            investments: DataArray containing investments
-            usefulLife: DataArray with number of years of life expectancy
-            timeIndex: Time dimension of dataArray. Must be a Pandas Index
-            includeInCurrentMonth: Wheter to start depreciating in month t or month t+1
-            timeIndexFormat: i.e. for '2016.01' would be '%Y.%m'
+           investments: DataArray containing investments
+           usefulLife: DataArray with number of years of life expectancy
+           timeIndex: Time dimension of dataArray. Must be a Pandas Index
+           includeInCurrentMonth: Wheter to start depreciating in month t or month t+1
+           timeIndexFormat: i.e. for '2016.01' would be '%Y.%m'
         """
+
         # Depreciation amount (safe division by zero)
         _usefulLife_months = usefulLife.astype(int) * 12
         _usefulLife_months_den = xr.where(
@@ -241,11 +257,13 @@ class PyplanFunctions(object):
         return _depreciations
 
     def irr(self, flow, time_index):
-        """Returns the Internal Rate of Return (IRR) of a series of periodic payments (negative values) and inflows (positive values). The IRR is the discount rate at which the Net Present Value (NPV) of the flows equals zero. 
-            The variable flow must be indexed by time_index.
+        """Returns the Internal Rate of Return (IRR) of a series of periodic payments (negative values) and inflows 
+           (positive values). The IRR is the discount rate at which the Net Present Value (NPV) of the flows equals zero. 
+           The variable flow must be indexed by time_index.
 
-            If the cash flow never changes sign, cp.irr() has no solution and returns NAN (Not A Number).
+           If the cash flow never changes sign, pp.irr() has no solution and returns NAN (Not A Number).
         """
+
         _getNodeFn = self.model.getNode
 
         _rest_of_indexes_labels = np.setdiff1d(flow.dims, [time_index.name])
@@ -270,10 +288,13 @@ class PyplanFunctions(object):
         return _cube
 
     def copy_as_values(self, source, targetId):
-        """Copy values of datArray "source" into dataArray with id 'targetId'. This function alter the definition of dataArray with 'targetId' identifier.
-                source: dataArray/index from copy values
-                targetId: identifier (string) of the target node 
+        """Copy values of datArray "source" into dataArray with id 'targetId'. This function alters the definition of 
+           dataArray with 'targetId' identifier.
+           
+           source: dataArray/index to copy values from
+           targetId: identifier (string) of the target node 
         """
+
         _getNodeFn = self.model.getNode
 
         if isinstance(source, str):
@@ -306,13 +327,14 @@ class PyplanFunctions(object):
         return True
 
     def excel_connection(self, filepath, useOpenpyxl=False, dataOnly=True, readOnly=True):
-        """ Create excel object from filepath.
-            filepath: path to excel file
-            useOpenpyxl: True for use custom 
-            dataOnly: True for view only the values, not formula
-            readOnly: True for read only, False for write options
-            Ex.
-                pp.excel_connection("\\path\\to\\the\\excelfile.xlsx")
+        """Creates Excel object from filepath.
+           
+           filepath: path to excel file
+           useOpenpyxl: bool 
+           dataOnly: bool. True to only get values, not the formula
+           readOnly: bool
+           Ex.
+               pp.excel_connection("\\path\\to\\the\\excelfile.xlsx")
         """
 
         if self.model.isLinux():
@@ -333,15 +355,15 @@ class PyplanFunctions(object):
             raise ValueError("File not found")
 
     def subscript(self, dataArray, indexes, values):
-        """
-            Filter dataArray using the filterList filters. 
+        """Filters dataArray using the filterList filters. 
 
-            dataArray: dataArray to be filtered
-            indexes: the index to filter 
-            values: the value to filter 
-            Ex.
-                pp.subscript(dataArray, index, value)
+           dataArray: dataArray to be filtered
+           indexes: the index to filter 
+           values: the value to filter 
+           Ex.
+               pp.subscript(dataArray, index, value)
         """
+
         if not isinstance(dataArray, xr.DataArray):
             raise ValueError(
                 "the 'dataArray' parameter must be of the type xr.DataArray")
@@ -362,11 +384,13 @@ class PyplanFunctions(object):
         return res
 
     def change_index(self, dataArray, oldIndex, newIndex, compareMode=1, defaultValue=None):
-        """ Change index of a dataArray object.
-            compareMode: 1: by Value (default), 2: by pos
-            Ex.
-                pp.change_index(dataArray, oldIndex, newIndex)
+        """Changes index of a dataArray object.
+           
+           compareMode: 1: by Value (default), 2: by pos
+           Ex.
+               pp.change_index(dataArray, oldIndex, newIndex)
         """
+
         _da = dataArray
 
         if compareMode == 1:
@@ -396,6 +420,7 @@ class PyplanFunctions(object):
     def kind_to_string(self, kind):
         """Returns the data type on human-readable string
         """
+
         if kind in {'U', 'S'}:
             return "string"
         elif kind in {'b'}:
@@ -410,18 +435,20 @@ class PyplanFunctions(object):
             return "void"
 
     def pandas_from_excel(self, excel, sheetName=None, namedRange=None, cellRange=None, indexes=None, driver=""):
-        """ Returns a pandas DataFrame from Excel spreadsheet.
-            excel: excel file path or openpyxl workbook object
-            sheetName: sheet name to be read
-            namedRange: range name to be read
-            cellRange: used together with sheetName to read from single cell range
-            indexes: List of columns names to be set as index of dataframe
-            Ex.
-                pp.pandas_from_excel(excelNode,"Sheet 1")
-                pp.pandas_from_excel(excelNode,namedRange="name_range")
-                pp.pandas_from_excel(excelNode,"Sheet 1",cellRange="A1:H10")
-            This function automatically generates pickles from every named range in excel file
-            when excel parameter is a string.
+        """Returns a pandas DataFrame from Excel spreadsheet.
+           
+           excel: excel file path or openpyxl workbook object
+           sheetName: sheet name to be read
+           namedRange: range name to be read
+           cellRange: used together with sheetName to read from single cell range
+           indexes: List of columns names to be set as index of dataframe
+           Ex.
+               pp.pandas_from_excel(excelNode,"Sheet 1")
+               pp.pandas_from_excel(excelNode,namedRange="name_range")
+               pp.pandas_from_excel(excelNode,"Sheet 1",cellRange="A1:H10")
+           
+           This function automatically generates pickles from every named range in excel file
+           when excel parameter is a string.
         """
 
         # When excel param is a string, this function tries to read from automatically generated
@@ -518,14 +545,16 @@ class PyplanFunctions(object):
             raise ValueError("excel must be a string or openpyxl workbook")
 
     def index_from_pandas(self, dataframe, columnName=None, removeEmpty=True):
-        """ Return a pd.Index from an column of a pandas dataframe.
-            dataframe: pandas dataframe
-            columnName: dataframe column name used for create cp.index. By default is created using the first column
-            removeEmpty: True for remove empty rows
-            Ex.
-                pp.index_from_pandas(df)
-                pp.index_from_pandas(df,"column10")
+        """Returns a pandas.Index from an column of a pandas dataframe.
+        
+           dataframe: pandas dataframe
+           columnName: dataframe column name used for create cp.index. By default is created using the first column
+           removeEmpty: True for remove empty rows
+           Ex.
+               pp.index_from_pandas(df)
+               pp.index_from_pandas(df,"column10")
         """
+
         _serie = None
         if columnName is None:
             _serie = dataframe[dataframe.columns[0]]
@@ -540,18 +569,20 @@ class PyplanFunctions(object):
         return pd.Index(_serie.unique())
 
     def index_from_excel(self, excel, sheetName=None, namedRange=None, cellRange=None, columnName=None, removeEmpty=True):
-        """ Return a pd.Index from an excel file.
-            excel: pp.excel object
-            sheetName: sheet name to be read
-            namedRange: name of the range to be read
-            cellRange: used with sheetname, for read from a simple range
-            columnName: dataframe column name used for create pp.index. By default is created using the first column
-            removeEmpty: True for remove empty rows
-            Ex.
-                pp.index_from_excel(excelNode,"Sheet 1")
-                pp.index_from_excel(excelNode,namedRange="name_range")
-                pp.index_from_excel(excelNode,namedRange="name_range", columnName="indicadores")
+        """Returns a pandas.Index from an excel file.
+           
+           excel: pp.excel object
+           sheetName: sheet name to be read
+           namedRange: name of the range to be read
+           cellRange: used with sheetname, for read from a simple range
+           columnName: dataframe column name used for create pp.index. By default is created using the first column
+           removeEmpty: True for remove empty rows
+           Ex.
+               pp.index_from_excel(excelNode,"Sheet 1")
+               pp.index_from_excel(excelNode,namedRange="name_range")
+               pp.index_from_excel(excelNode,namedRange="name_range", columnName="indicadores")
         """
+
         if isinstance(excel, str) or "openpyxl.workbook" in str(type(excel)):
             _df = self.pandas_from_excel(
                 excel, sheetName, namedRange, cellRange)
@@ -561,17 +592,21 @@ class PyplanFunctions(object):
                 "excel can be excel_connection object or a str path to the filename")
 
     def dataarray_from_pandas(self, dataframe, domainDic, valueColumns, defaultValue=None, valueColumnsAsDim=True, sumDuplicateRecords=True):
-        """ Returns a DataArray (valueColumns is string or (valueColumns is pd.Index and valueColumnsAsDim is True)) or Dataset (valueColumns is a list or (valueColumns is a pd.Index and valueColumnsAsDim is False)) from a Pandas dataframe applying the set_domain function.
-            dataframe: Pandas dataframe with no index columns.
-            domainDic: Dictionary of column names and index names. Ex. {'Column Name': index_name}.
-            valueColumns: String, list or pd.Index. Dataframe's value columns.
-            defaultValue: Default value when applying set_domain function.
-            valueColumnsAsDim: If True, valueColumns becomes a dimension of resulting DataArray. If False, each value column becomes a variable of the resulting Dataset.
-            sumDuplicateRecords: If True, sums identical rows. Otherwise, removes duplicates (except the first one). 
-
-            Ex. 
-                pp.dataarray_from_pandas(sales_dataframe, {'Sales Channel': sales_channels, 'Market Segment': market_segments, 'Month': time}, 'Sales', 0.)
+        """Returns a DataArray (valueColumns is string or (valueColumns is pd.Index and valueColumnsAsDim is True)) 
+           or Dataset (valueColumns is a list or (valueColumns is a pd.Index and valueColumnsAsDim is False)) from
+           a Pandas dataframe applying the set_domain function.
+           
+           dataframe: Pandas dataframe with no index columns.
+           domainDic: Dictionary of column names and index names. Ex. {'Column Name': index_name}.
+           valueColumns: String, list or pd.Index. Dataframe's value columns.
+           defaultValue: Default value when applying set_domain function.
+           valueColumnsAsDim: If True, valueColumns becomes a dimension of resulting DataArray. If False, each value
+           column becomes a variable of the resulting Dataset.
+           sumDuplicateRecords: If True, sums identical rows. Otherwise, removes duplicates (except the first one). 
+           Ex. 
+               pp.dataarray_from_pandas(sales_dataframe, {'Sales Channel': sales_channels, 'Month': time}, 'Sales', 0.)
         """
+
         _index_value_columns = None
 
         # Check if valueColumns is string, list, np.ndarray or pd.Index (transform to list) and indexes is dict.
@@ -636,20 +671,21 @@ class PyplanFunctions(object):
         return _data
 
     def dataarray_from_excel(self, excel, sheetName=None, namedRange=None, cellRange=None, indexes=None, valueColumns=None, indexColumnHeaders=None, replaceByIndex=None, defaultValue=0):
-        """ Return a xr.DataArray from excel file.
-            excel: excel_connection object.
-            sheetName: sheet name to be read
-            namedRange: name of the range to be read.
-            cellRange: used with sheetName to read from a simple range.
-            indexes: pd.Index objects to perform a change_index operation.
-            valueColumns: string with the column name of the dataframe that contains the values.
-                        pd.Index with column names to convert columns to index.
-            indexColumnHeaders: (optional) column names in pandas to parse with indexes. Used if header on dataframe is not equal to index identifiers.
-            replaceByIndex: (optional) replace index used in valueColumns by this index (using change_index).
-
-            Ex.
-                pp.dataarray_from_excel(excelNode,"Sheet 1",indexes=[indicadores],valueColumns="descuentos")
-                pp.dataarray_from_excel(excelNode,namedRange="nombre_rango",indexes=[indicadores],valueColumns=time)
+        """Returns a xr.DataArray from excel file.
+           
+           excel: excel_connection object.
+           sheetName: sheet name to be read
+           namedRange: name of the range to be read.
+           cellRange: used with sheetName to read from a simple range.
+           indexes: pd.Index objects to perform a change_index operation.
+           valueColumns: string with the column name of the dataframe that contains the values. pd.Index with column
+           names to convert columns to index.
+           indexColumnHeaders (optional): column names in pandas to parse with indexes. Used if header on dataframe 
+           is not equal to index identifiers.
+           replaceByIndex (optional): replace index used in valueColumns by this index (using change_index).
+           Ex.
+               pp.dataarray_from_excel(excelNode,"Sheet 1",indexes=[indicadores],valueColumns="descuentos")
+               pp.dataarray_from_excel(excelNode,namedRange="nombre_rango",indexes=[indicadores],valueColumns=time)
         """
 
         dataframe = self.pandas_from_excel(
@@ -738,18 +774,21 @@ class PyplanFunctions(object):
             return _da.fillna(defaultValue)
 
     def to_dataarray(self, index):
-        """ Convert an index into dataarray indexed by it and it as values
-            Ex.
-                pp.to_dataarray(time_index)
+        """Converts an index into DataArray indexed by index and with its values
+           Ex.
+               pp.to_dataarray(time_index)
         """
+
         return xr.DataArray(index.values, [index])
 
     def goal_seek(self, nodeIdX, nodeIdObjective, goal=0, startValue=1, matrixIndex=None):
-        """ Finds the value of nodeIdX that makes nodeIdObjective equal to goal.
-            nodeIdX: String with id of node X
-            nodeIdObjective: String with id of node Objective
-            matrixIndex: Index for multidimensional goal seek
+        """Finds the value of nodeIdX that makes nodeIdObjective equal to goal.
+           
+           nodeIdX: String with id of node X
+           nodeIdObjective: String with id of node Objective
+           matrixIndex: Index for multidimensional goal seek
         """
+
         _getNodeFn = self.model.getNode
         if self._exists_module("scipy"):
             from scipy.optimize import newton
@@ -784,6 +823,7 @@ class PyplanFunctions(object):
     def _exists_module(self, import_name):
         """Return true if module is installed
         """
+
         try:
             importlib.import_module(import_name)
             return True
@@ -791,8 +831,9 @@ class PyplanFunctions(object):
             return False
 
     def install_library(self, pypi_name, import_name=None):
-        """ DEPRECATED. Use Lib manager instead
+        """DEPRECATED. Use Lib manager instead
         """
+
         if import_name is None:
             import_name = pypi_name
 
@@ -806,11 +847,12 @@ class PyplanFunctions(object):
         return True
 
     def create_time(self, date_start, date_end, freq='M', format='%Y.%m'):
-        """Create time index usign start and end dates and freq. The result is formated to format parameter
-            Ex.
-                pp.create_time('2016.01','2018.12')
-                pp.create_time('2016.01.01','2016.12.31',freq='D',format='%d/%m/%Y')
+        """Creates time index usign start, end dates and freq. The result is formated with format parameter
+           Ex.
+               pp.create_time('2016.01','2018.12')
+               pp.create_time('2016.01.01','2016.12.31',freq='D',format='%d/%m/%Y')
         """
+
         if "." in date_start:
             date_start = date_start.replace('.', '-')
         if "." in date_end:
@@ -819,11 +861,17 @@ class PyplanFunctions(object):
 
     def lookup(self, dataArray, dataMap, sharedIndex, defaultValue=0):
         """Returns the value of dataArray indexed by the index of dataMap.
-            dataArray must be indexed by sharedIndex and dataArray values must correspond to elements of sharedIndex.
-            For example: Let's say you have a cube with an estimated inflation rate by Country ("inflation_rate" is the name of the cube; "country" is the name of the index) and you want to assign it to the corresponding Company depending on its location. On the other hand, there's a many-to-one map where each Company is allocated to a single Country ("country_to_company_allocation"). The sharedIndex, in this case, is Country ("country").
-            As a result, 
-                lookup( inflation_rate , country_to_company_allocation , country )
-            will return the estimated inflation rate by Company.
+           
+           dataArray must be indexed by sharedIndex and dataArray values must correspond to elements of sharedIndex.
+           
+           For example: Let's say you have a dataArray with an estimated inflation rate by Country ("inflation_rate"
+           is the name of the dataArray; "country" is the name of the index) and you want to assign it to the 
+           corresponding Company depending on its location. On the other hand, there's a many-to-one map where each
+           Company is allocated to a single Country ("country_to_company_allocation"). The sharedIndex, in this case,
+           is Country ("country").
+           As a result, 
+                pp.lookup( inflation_rate , country_to_company_allocation , country )
+           will return the estimated inflation rate by Company.
         """
 
         try:
@@ -836,13 +884,18 @@ class PyplanFunctions(object):
             return final.fillna(defaultValue)
 
     def aggregate(self, dataArray, mapInfo, sourceIndex, targetIndex, aggregationFunction='sum'):
-        """ Converts dataArray, originally indexed by sourceIndex, to a dataArray indexed by targetIndex, aggregating according to the mapInfo‘s allocation of targetIndex: sourceIndex.
-            mapInfo gives the value of targetIndex for each element of sourceIndex (If the map does not match then the element will not be set into target index and information will be lost)
-            aggregationFuction (optional) especifies the function to be used when grouping data (sum, mean, min, max, median)
+        """Converts dataArray, originally indexed by sourceIndex, to a dataArray indexed by targetIndex, aggregating
+           according to the mapInfo‘s allocation of targetIndex: sourceIndex.
+           
+           mapInfo: gives the value of targetIndex for each element of sourceIndex (If the map does not match then the
+           element will not be set into target index and information will be lost)
+           aggregationFuction (optional): especifies the function to be used when grouping data (sum, mean, min, max,
+           median)
 
-            Ex. for aggregating time information into annual index, the syntax is:
-                pp.aggregate(dataArray, timeToYearsMap, time, years)
+           Ex. for aggregating time information into annual index, the syntax is:
+               pp.aggregate(dataArray, timeToYearsMap, time, years)
         """
+
         # Transform map and targetIndex to list
         if not isinstance(mapInfo, list):
             mapInfo = [mapInfo]
@@ -892,8 +945,8 @@ class PyplanFunctions(object):
                 'mapInfo and targetIndex must have the same number of elements')
 
     def choice(self, index, selection, includeAll=False):
-        """DEPRECATED: Use selector instead. 
-            Return the element in the "selection" position of the index. 
+        """DEPRECATED: Use pp.selector instead. 
+           Returns the element in the "selection" position of the index. 
         """
         if selection == 0 and includeAll == 1:
             return "All"
@@ -910,51 +963,59 @@ class PyplanFunctions(object):
         return ""
 
     def dynamic(self, dataArray, index, shift, initialValues=None):
-        """Perform cyclic calculations betwwen nodes.
-            dataArray: dataArray to perform the ciclyc dependency calculation
-            index: Index from dataArray to shift 
-            shift: number of elemnts to shift. Can be positive or negative
-            initialValues: (optional), initial values to apply to first "shift" elemnts
+        """Performs cyclic calculations between nodes.
+           
+           dataArray: dataArray to perform the ciclyc dependency calculation
+           index: Index from dataArray to shift 
+           shift: number of elemnts to shift. Can be positive or negative
+           initialValues (optional): scalar or 1-dim dataArray. Initial values to apply to first "shift" elements
         """
+
         _da = dataArray.shift({index.name: (shift*-1)})
         if not initialValues is None:
             _da = _da.fillna(initialValues)
         return _da
 
     def slice_dataarray(self, dataArray, index, position):
-        """Filter dataArray by integer position along the specified index.
+        """Filters dataArray by integer position along the specified index.
 
-            dataArray: dataArray to be filtered
-            index: pp.index 
-            position: int 
-            Ex.
-                pp.isel(dataArray1, index1, 0)
+           dataArray: dataArray to be filtered
+           index: pp.index 
+           position: int 
+           Ex.
+               pp.slice_dataarray(dataArray1, index1, 0)
         """
+
         if not isinstance(dataArray, xr.DataArray):
             raise ValueError(
                 "the 'dataArray' parameter must be of the type xr.DataArray")
         return dataArray.isel({index.name: position}, drop=True)
 
     def fill_inf(self, dataArray, value=0):
-        """Fill np.inf values with default value
-            Ex.
-                pp,fill_inf(dataArray,0)
+        """Fills np.inf values with value
+           
+           Ex.
+               pp.fill_inf(dataArray, 0)
         """
+
         return self.apply_fn(dataArray, lambda x: value if np.isinf(x) else x)
 
     def fill_all(self, dataArray, value=0):
-        """Fill np.inf and np.nan with default value
-            Ex.
-                pp.fill_all(dataArray,0)
+        """Fills np.inf and np.nan with value
+           Ex.
+               pp.fill_all(dataArray, 0)
         """
+
         return self.fill_inf(dataArray.fillna(value), value)
 
     def add_periods(self, start, periods, freq='M', format='%Y.%m'):
-        """Add periods to a date. Can set freq and output format 
+        """Adds periods to a date. Allows setting freq and output format 
+           
            Ex.
-                pp.addPeriods('2016.01',6)
-                pp.apply( pp.addPeriods, inicio_de_proyectos , duracin_de_proyectos)
+                pp.addPeriods('2016.01', 6)
+                pp.apply_fn(pp.addPeriods, projects_initial_date, projects_duration)
         """
+
         if "." in start:
             start = start.replace('.', '-')
         if periods < 0:
@@ -963,9 +1024,12 @@ class PyplanFunctions(object):
             return pd.period_range(start=start, periods=periods+1, freq=freq).strftime(format)[-1]
 
     def npv(self, rate, flow, time_index, offset=1):
-        """"Returns the Net Present Value (NPV) of a cash flow with equally spaced periods. The flow parameter must contain a series of periodic payments (negative values) and inflows (positive values), indexed by time_index.
-            The optional offset parameter especifies the offset of the first value relative to the current time period. By default, offset is set to 1, indicating that the first value is discounted as if it is one step in the future
+        """"Returns the Net Present Value (NPV) of a cash flow with equally spaced periods. The flow parameter must contain
+            a series of periodic payments (negative values) and inflows (positive values), indexed by time_index.
+            The optional offset parameter especifies the offset of the first value relative to the current time period. By 
+            default, offset is set to 1, indicating that the first value is discounted as if it is one step in the future
         """
+
         _number_of_periods = self.get_pos(time_index) + offset
         _present_values = flow / (1 + rate) ** _number_of_periods
         _npv = _present_values.sum(time_index.name)
@@ -974,6 +1038,7 @@ class PyplanFunctions(object):
     def copy_index(self, dataArray, sortValues=True):
         """Generates a pd.Index with the unique values of the dataArray.
         """
+
         np_values = dataArray.values.flatten()
 
         # Numpy unique function automatically reorders. Pandas unique, does not.
@@ -984,7 +1049,8 @@ class PyplanFunctions(object):
 
     def sequence_index(self, _start, _end, _step=1):
         """
-        Returns a pd.Index with the sequence between 'start' and 'end' parameters. Both limits are inclusive. Values are converted to string.
+        Returns a pd.Index with the sequence between 'start' and 'end' parameters. Both limits are inclusive. Values are 
+        converted to string.
         """
         try:
             _start = int(_start)
@@ -999,11 +1065,14 @@ class PyplanFunctions(object):
         return _index
 
     def subindex(self, dataArray, targetValue, targetIndex, method='Last'):
-        """ Returns a dataArray containing the value of targetIndex for which dataArray (indexed by targetIndex) is equal to targetValue.
-            dataArray: Xarray dataArray.
-            targetValue: Integer, Float or String.
-            targetIndex: Pandas Index.
-            method: There are two options: "Last" returns the last occurrence of targetIndex for which dataArray is equal to targetValue. "First" returns the first occurrence.
+        """Returns a dataArray containing the value of targetIndex for which dataArray (indexed by targetIndex) is equal 
+           to targetValue.
+           
+           dataArray: Xarray dataArray.
+           targetValue: Integer, Float or String.
+           targetIndex: Pandas Index.
+           method: There are two options: "Last" returns the last occurrence of targetIndex for which dataArray is equal
+           to targetValue. "First" returns the first occurrence.
         """
 
         # Equals dataArray to targetValue and cumulates it along targetIndex.
@@ -1027,7 +1096,10 @@ class PyplanFunctions(object):
             raise ValueError("Insert a valid method")
 
     def concat_rows(self, array_param, index_param):
-        """TODO: add doc"""
+        """Flattens array_param by replacing with a new index that includes all combinatios of values from
+           index_param
+        """
+        
         _index = pd.Index([])
         for i in index_param.values:
             _index = self.concat_index(_index, pd.Index(
@@ -1035,14 +1107,14 @@ class PyplanFunctions(object):
         return _index
 
     def log_task(self, task_state="PROGRESS", task_description=None, task_activity=None, task_info=None):
+        """Generates log entry. Used for schedule tasks
+            
+           task_state: PROGRESS, INFO, WARNING, FAILURE, RETRY, SUCCESS, REVOKED, STARTED, PENDING, RECEIVED
+           task_description: Shot description of task. example: start process
+           task_activity: other short description
+           task_info: json with more info 
         """
-            Generate log entry. Used for schedule tasks
-            params:
-            task_state: PROGRESS, INFO, WARNING, FAILURE, RETRY, SUCCESS, REVOKED, STARTED, PENDING, RECEIVED
-            task_description: Shot description of task. example: start process
-            task_activity: other short description
-            task_info: json with more info 
-        """
+
         import json
         _params = {
             "state": task_state,
@@ -1065,7 +1137,8 @@ class PyplanFunctions(object):
         return res
 
     def pandas_from_xlsb_file(self, filepath):
-        """TODO: add doc"""
+        """Returns a pandas DataFrame from xlsb file
+        """
 
         if self._exists_module("pyxlsb"):
             from pyxlsb import open_workbook as open_xlsb
@@ -1080,43 +1153,48 @@ class PyplanFunctions(object):
             raise ValueError("pyxlsb library not found")
 
     def selector(self, options, selected, multiselect=False):
-        """ Create UI Pyplan selector for desicion nodes
-            Params:
-                options: List or pd.Index with available values that can be selected 
-                selected: current selected index value's
-                multiselect: True to allow multiple selection
+        """Creates UI Pyplan selector for decision nodes
+           
+           options: List or pandas.Index with values that can be selected 
+           selected: current selected index value
+           multiselect: True to allow multiple selection
         """
+
         return Selector(options, selected, multiselect)
 
     def send_message(self, message_text, message_title=None, not_level_reverse="info"):
-        """Send message to UI. Only used with Pyplan UI
-            Ex.
-                pp.send_message("The process has been completed","Process complete!","success")            
+        """Sends message to UI. Only used with Pyplan UI
+           Ex.
+               pp.send_message("The process has been completed","Process complete!","success")            
         """
+
         if self.model and self.model.ws:
             not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
                 not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
             self.model.ws.sendMsg(message_text, message_title, not_level)
 
     def progressbar(self, progress, message_text="", not_level_reverse="info"):
-        """Create and update progress bar. Only used with Pyplan UI
-            Ex.
-                pp.progressbar(20, "Step 1","info")
-                pp.progressbar(100, "Complete!","success")
+        """Creates and updates progress bar. Only used with Pyplan UI
+           Ex.
+               pp.progressbar(20, "Step 1","info")
+               pp.progressbar(100, "Complete!","success")
         """
+
         if self.model and self.model.ws:
             not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
                 not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
             self.model.ws.progressbar(progress, message_text, not_level)
 
     def create_report(self, reportItems, reportIndexName="Report index", reportIndex=None):
-        """ Concatenate the reportItems dic dataarrays along the reportIndex dimension
-            reportItems: dict or list with datarrays to concat (must have the same structure)
-            reportIndexName: Name of the new ReportIndex dimension
-            reportIndex: Overwrite ReportIndex dimension
-            Ex.
-                pp.create_report(reportItems={"Demand":demand, "Product Stock":stock}, reportIndexName="New Report" )
+        """Concatenates the reportItems dic dataArrays along the reportIndex dimension
+           
+           reportItems: dict or list with datarrays to concat (must have the same structure)
+           reportIndexName: Name of the new ReportIndex dimension
+           reportIndex: Overwrite ReportIndex dimension
+           Ex.
+               pp.create_report(reportItems={"Demand":demand, "Product Stock":stock}, reportIndexName="New Report")
         """
+
         if isinstance(reportItems, dict):
             report_index = list(reportItems)
             report_values = list(reportItems.values())
@@ -1134,17 +1212,22 @@ class PyplanFunctions(object):
 
     def pandas_from_dataarray(self, dataarray):
         """Create dataframe pandas from datarray with n dimensions
-            Ex.
-                pp.pandas_from_dataarray(dataArrayNode)
+           
+           Ex.
+               pp.pandas_from_dataarray(dataArrayNode)
         """
+
         return dataarray.stack(z=dataarray.dims).to_dataframe("value")
 
     def pandas_from_access(self):
-        """Class to manage access databases"""
+        """Class to manage access databases
+        """
+
         return Pandas_from_acc()
     
     def __generate_pkl_from_excel(self, workbook, filepath, targetDir, maxFileSizeMB=None, flagFilename='flag.tmp'):
-        """Generate compressed pickle from excel file
+        """Generates compressed pickle from excel file
+           
            workbook: openpyxl workbook
            filepath: full file path
            targetDir: path where pickles will be stored
@@ -1216,6 +1299,9 @@ class PyplanFunctions(object):
                 os.remove(filepath)
     
     def __read_pickle_df(self, filepath, indexes=None):
+        """Loads dataframe from pickled file
+        """
+
         df = pd.read_pickle(filepath, compression='gzip')
         if not indexes is None:
             df.set_index(indexes, inplace=True)
@@ -1224,8 +1310,8 @@ class PyplanFunctions(object):
     def get_nested_lists_shape(self, lst, shape=()):
         """Returns a tuple with the shape of nested lists similarly to numpy's shape.
 
-        lst: the nested list
-        shape: the shape up to the current recursion depth
+           lst: the nested list
+           shape: the shape up to the current recursion depth
         """
 
         if not isinstance(lst, list):
@@ -1249,8 +1335,8 @@ class PyplanFunctions(object):
         """Concatenates Xarray DataArrays along a new dimension, broadcasting by all possible
         dimensions
 
-        valuesList: list of DataArrays, int, str, float. At least one of them must be DataArray
-        dim: Pandas Index with same length as valuesList
+           valuesList: list of DataArrays, int, str, float. At least one of them must be DataArray
+           dim: Pandas Index with same length as valuesList
         """
         
         # Error handling
@@ -1297,20 +1383,20 @@ class PyplanFunctions(object):
         """Concatenates Xarray DataArrays along one or two new dimensions, broadcasting
         by all possible dimensions
 
-        valuesList: list or list of lists of DataArrays, int, str, float. At least one
-        of them must be a DataArray object
-        dim: Pandas Index or list of Pandas Indexes with same shape as valuesList
+           valuesList: list or list of lists of DataArrays, int, str, float. At least one
+           of them must be a DataArray object
+           dim: Pandas Index or list of Pandas Indexes with same shape as valuesList
 
-        Ex.
-            pp.concat_dataarrays(
-                valuesList=[node1, node2, node3],
-                dim=three_items_index)
-            pp.concat_dataarrays(
-                valuesList=['String Example', node2, 0],
-                dim=three_items_index)
-            pp.concat_dataarrays(
-                valuesList=[[node1, node2, node3], [node4, node5, node6]],
-                dim=[two_items_index, three_items_index])
+           Ex.
+               pp.concat_dataarrays(
+                   valuesList=[node1, node2, node3],
+                   dim=three_items_index)
+               pp.concat_dataarrays(
+                   valuesList=['String Example', node2, 0],
+                   dim=three_items_index)
+               pp.concat_dataarrays(
+                   valuesList=[[node1, node2, node3], [node4, node5, node6]],
+                   dim=[two_items_index, three_items_index])
         """
 
         valuesListShape = self.get_nested_lists_shape(valuesList)
@@ -1450,8 +1536,7 @@ class Selector(object):
 
 
 class Pandas_from_acc():
-    """
-    Class that allows to read access files with pandas
+    """Class that allows to read access files with pandas
 
     EXAMPLES OF USE:
 
