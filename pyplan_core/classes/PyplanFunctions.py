@@ -482,7 +482,7 @@ class PyplanFunctions(object):
                     named_ranges = [r.name for r in wb.defined_names.definedName]
 
                     # Check if user has writing permissions to generate new pickles and if namedRange exists
-                    if os.access(orig_dir, os.W_OK) and namedRange in named_ranges:
+                    if os.access(excel, os.W_OK) and namedRange in named_ranges:
                         flag_filename = 'flag.tmp'
                         flag_filepath = os.path.join(target_dir, flag_filename)
 

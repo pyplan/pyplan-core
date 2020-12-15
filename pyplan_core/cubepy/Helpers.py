@@ -375,18 +375,22 @@ class Helpers(object):
         return cpf.excel(fullFilename, useOpenpyxl, dataOnly, readOnly)
 
     def pandasFromExcel(self, excel, sheetName=None, namedRange=None, cellRange=None, indexes=None, driver='Driver={Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)};DBQ=%s;READONLY=TRUE'):
-        """ return a pandas dataframe from excel.
-        excel: path to excel file or cp.excel object
-        sheetName: sheet name to be read
-        namedRange: name of the range to be read
-        cellRange: used with sheetname, for read from a simple range
-        indexes: Listo of columns names for convert to index of dataframe
-            Ex.
-                cp.pandasFromExcel(excelNode,"Sheet 1")
-                cp.pandasFromExcel(excelNode,namedRange="name_range")
-                cp.pandasFromExcel(excelNode,"Sheet 1",cellRange="A1:H10")
-
+        """Returns a pandas DataFrame from Excel spreadsheet.
+           
+           excel: excel file path or openpyxl workbook object
+           sheetName: sheet name to be read
+           namedRange: range name to be read
+           cellRange: used together with sheetName to read from single cell range
+           indexes: List of columns names to be set as index of dataframe
+           Ex.
+               cp.pandasFromExcel(excelNode,"Sheet 1")
+               cp.pandasFromExcel(excelNode,namedRange="name_range")
+               cp.pandasFromExcel(excelNode,"Sheet 1",cellRange="A1:H10")
+           
+           This function automatically generates pickles from every named range in excel file
+           when excel parameter is a string.
         """
+
         if isinstance(excel, str):
 
             if not os.path.isfile(excel):
