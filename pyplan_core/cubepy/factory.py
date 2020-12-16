@@ -1,12 +1,16 @@
 #functions for use as:  import pyplan_core.cubepy.factory as cp
 
-import numpy as np
-from pyplan_core import cubepy 
-import numbers
-from sys import platform
-from pyplan_core.cubepy.cube import kindToString, apply_op
-import os
 import csv
+import numbers
+import os
+from sys import platform
+import time
+
+import numpy as np
+import pandas as pd
+from openpyxl import load_workbook
+from pyplan_core import cubepy
+from pyplan_core.cubepy.cube import apply_op, kindToString
 
 random = -123798
 byVal = 1
@@ -279,7 +283,7 @@ def irr(flow, time_index ):
 
     If the cash flow never changes sign, cp.irr() has no solution and returns NAN (Not A Number).
     """
-    import pandas as pd
+    
 
     _cube_dimensions = index("flowdims",flow.dims ) 
     _rest_of_indexes_labels = subset( _cube_dimensions != time_index.name ).values 
@@ -371,7 +375,7 @@ def copyIndex(cube, indexName="new index"):
     """Generate a cp.index with current unique values of the cube. 
     The cube must have only one dimension
     """
-    import pandas as pd
+
     if cube.ndim>1:
         raise ValueError("The cube must have only one dimension")
 
@@ -480,7 +484,6 @@ def cubeFromPandas(dataframe, cubeIndexes, valueColumns, indexColumnHeaders=None
         indexColumnHeaders: (optional) column names in pandas to parse with cubeIndexes. Used if header on dataframe is not equal to index identifiers.
         replaceByIndex: (optional) replace index used in valueColumns for this index. (using changeindex)
     """
-    import pandas as pd
 
     valueIndex=None
     if isinstance(valueColumns,cubepy.Index):
@@ -580,7 +583,6 @@ def pandasFromCube(cube, dataColumnName="value", keepIndexOrder=False ):
     """
     Return indexed Dataframe created from cubePy Cube
     """
-    import pandas as pd
 
     multiIndexValues = [idx.values for idx in cube.axes]
     allIndexNames = [idx.name for idx in cube.axes]
@@ -620,40 +622,79 @@ def excel(filepath, useOpenpyxl=False, dataOnly=True, readOnly=True ):
 
 
 def pandasFromExcel(excel,sheetName=None,namedRange=None,cellRange=None, indexes=None, driver='Driver={Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)};DBQ=%s;READONLY=TRUE'):
-    """ return a pandas dataframe from excel.
-    excel: path to excel file or cp.excel object
-    sheetName: sheet name to be read
-    namedRange: name of the range to be read
-    cellRange: used with sheetname, for read from a simple range
-    indexes: Listo of columns names for convert to index of dataframe
+    """Returns a pandas DataFrame from Excel spreadsheet.
+        
+        excel: excel file path or openpyxl workbook object
+        sheetName: sheet name to be read
+        namedRange: range name to be read
+        cellRange: used together with sheetName to read from single cell range
+        indexes: List of columns names to be set as index of dataframe
         Ex.
             cp.pandasFromExcel(excelNode,"Sheet 1")
             cp.pandasFromExcel(excelNode,namedRange="name_range")
             cp.pandasFromExcel(excelNode,"Sheet 1",cellRange="A1:H10")
-
+        
+        This function automatically generates pickles from every named range in excel file
+        when excel parameter is a string.
     """
-    import pandas as pd 
     
     if isinstance(excel,str):
 
         if isLinux():
-            filename=excel
-            target_dir = os.path.dirname(filename)
-            file_name, file_extension = os.path.splitext(filename)
-            target_dir = os.path.join(target_dir, file_name)
-            file_to_read_legacy = os.path.join(target_dir, f"{namedRange}.pkl")
-            target_dir = f"{target_dir[:target_dir.rfind('/')+1]}.{target_dir[target_dir.rfind('/')+1:]}"
+            # When excel param is a string, this function tries to read from automatically generated
+            # pickles for every named range if they are newer than the Excel file (its modified date).
+            # If they do not exist or are outdated, tries to generate one pickle for every named range in
+            # the spreadsheet.
+            # Requirements: 
+            #   - it must have writing permissions,
+            #   - it must have named ranges.
+            # Otherwise, it should load the spreadsheet using openpyxl library and then read the sheet,
+            # range or cellrange.
 
-            file_to_read = os.path.join(target_dir, f"{namedRange}.pkl") if os.path.isfile(os.path.join(target_dir, f"{namedRange}.pkl")) else file_to_read_legacy
+            filepath = excel
 
-            if os.path.isfile(file_to_read):
-                df = pd.read_pickle(file_to_read,compression='gzip')
-                if not indexes is None:
-                    df.set_index(indexes,inplace=True)
-                return df
+            # Only read/generate pickles for named ranges
+            if namedRange is not None:
+                orig_dir, single_filename = os.path.split(filepath)
+                filename, _ = os.path.splitext(single_filename)                
+                target_dir = os.path.join(orig_dir, f".{filename}")
+                picklepath = os.path.join(target_dir, f"{namedRange}.pkl")
+
+                # Read from pickle if it is newer than Excel file
+                if os.path.isfile(picklepath) and os.path.getmtime(picklepath) >= os.path.getmtime(filepath):
+                    return __readPickleDf(filepath=picklepath, indexes=indexes)
+                
+                else:
+                    wb = load_workbook(filepath, data_only=True, read_only=True)
+                    named_ranges = [r.name for r in wb.defined_names.definedName]
+
+                    # Check if user has writing permissions to generate new pickles and if namedRange exists
+                    if os.access(excel, os.W_OK) and namedRange in named_ranges:
+                        flag_filename = 'flag.tmp'
+                        flag_filepath = os.path.join(target_dir, flag_filename)
+
+                        # Clean potentially old flag files
+                        __removeOldFile(filepath=flag_filepath, maxElapsedMinutes=60)
+
+                        # If flag file exists (optimization is running), read directly from Excel
+                        if os.path.isfile(flag_filepath):
+                            return pandasFromExcel(wb, sheetName, namedRange, cellRange, indexes)
+                        else:
+                            __generatePklFromExcel(
+                                workbook=wb, filepath=filepath, targetDir=target_dir, 
+                                maxFileSizeMB=100, flagFilename=flag_filename)
+                            # Read file
+                            if os.path.isfile(picklepath):
+                                return __readPickleDf(filepath=picklepath, indexes=indexes)
+                            else:
+                                return pandasFromExcel(wb, sheetName, namedRange, cellRange, indexes)
+                
+                    # Read directly from Excel
+                    else:
+                        return pandasFromExcel(wb, sheetName, namedRange, cellRange, indexes)
             else:
-                #TODO: use openpyxl
-                raise ValueError(f"Optimized version not found for: '{filename}'")
+                wb = load_workbook(filepath, data_only=True, read_only=True)
+                return pandasFromExcel(wb, sheetName, namedRange, cellRange, indexes)
 
         else:
             import pyodbc
@@ -678,54 +719,50 @@ def pandasFromExcel(excel,sheetName=None,namedRange=None,cellRange=None, indexes
             if not indexes is None:
                 df.set_index(indexes,inplace=True)
             return df
-    else:
-        
-        if "openpyxl.workbook" in str(type(excel)):
-            rangeToRead = None
-            if not namedRange is None:
-                the_range = excel.defined_names[namedRange]
-                dests = the_range.destinations
-                for title, coord in dests:
-                    ws = excel[title]
-                    rangeToRead=ws[coord]
-            elif not cellRange is None:
-                ws = excel[sheetName]
-                rangeToRead = ws[cellRange]
-            else: 
-                rangeToRead = excel[sheetName]
+    elif "openpyxl.workbook" in str(type(excel)):
+        rangeToRead = None
+        if not namedRange is None:
+            the_range = excel.defined_names[namedRange]
+            dests = the_range.destinations
+            for title, coord in dests:
+                ws = excel[title]
+                rangeToRead=ws[coord]
+        elif not cellRange is None:
+            ws = excel[sheetName]
+            rangeToRead = ws[cellRange]
+        else: 
+            rangeToRead = excel[sheetName]
 
-            nn=0
-            cols=[]
-            values = []
-            for row in rangeToRead:
-                if nn==0:
-                    cols = [str(c.value) for c in row]
-                else:
-                    values.append([c.value for c in row]) 
+        cols=[]
+        values = []
+        for index, row in enumerate(rangeToRead):
+            if index==0:
+                cols = [str(c.value) for c in row]
+            else:
+                values.append([c.value for c in row])
+        nn=0
+        _finalCols=[]
+        for _col in cols:
+            if _col is None:
+                _finalCols.append("Unnamed" + str(nn))
                 nn+=1
-            nn=0
-            _finalCols=[]
-            for _col in cols:
-                if _col is None:
-                    _finalCols.append("Unnamed" + str(nn))
-                    nn+=1
-                else:
-                    _finalCols.append(_col)
-            
-            df = pd.DataFrame(values,columns=_finalCols)
-            if not indexes is None:
-                if isinstance(indexes,str):
-                    indexes=[indexes]
-                toIndex = []
-                for indexColumn in indexes:
-                    if indexColumn in df.columns.values:
-                        toIndex.append(indexColumn)
-                if len(toIndex)>0:
-                    df.set_index(toIndex, inplace=True)
+            else:
+                _finalCols.append(_col)
+        
+        df = pd.DataFrame(values,columns=_finalCols)
+        if not indexes is None:
+            if isinstance(indexes,str):
+                indexes=[indexes]
+            toIndex = []
+            for indexColumn in indexes:
+                if indexColumn in df.columns.values:
+                    toIndex.append(indexColumn)
+            if len(toIndex)>0:
+                df.set_index(toIndex, inplace=True)
 
-            return df.dropna(how ="all")
-        else:
-            raise ValueError("excel can be cp.excel object")        
+        return df.dropna(how ="all")
+    else:
+        raise ValueError("excel must be a string or openpyxl workbook")        
 
 
 def indexFromExcel(excel, sheetName=None,namedRange=None,cellRange=None, columnName=None, removeEmpty=True, indexName="new index"):
@@ -828,3 +865,85 @@ def isLinux():
         return True
     else:
         return False
+
+def __removeOldFile(filepath, maxElapsedMinutes=1):
+        """Deletes file if its modified date is older than current date minus maxElapsedMinutes
+        """
+
+        if os.path.isfile(filepath):
+            # Dates are expressed in seconds since epoch (floats)
+            modified_date = os.path.getmtime(filepath)
+            min_modified_date = time.time() - (maxElapsedMinutes * 60)
+            if modified_date < min_modified_date:
+                os.remove(filepath)
+
+def __readPickleDf(filepath, indexes=None):
+        """Loads dataframe from pickled file
+        """
+
+        df = pd.read_pickle(filepath, compression='gzip')
+        if not indexes is None:
+            df.set_index(indexes, inplace=True)
+        return df
+
+def __generatePklFromExcel(workbook, filepath, targetDir, maxFileSizeMB=None, flagFilename='flag.tmp'):
+        """Generates compressed pickle from excel file
+           
+           workbook: openpyxl workbook
+           filepath: full file path
+           targetDir: path where pickles will be stored
+           maxFileSizeMB: file size limit in megabytes
+           flagFilename: name of temporary flag file
+        """
+
+        optimizable_templates = ['.xlsx', '.xlsm', '.xlsb']
+        _, ext = os.path.splitext(filepath)
+        
+        # Generate pickle for selected file types if its size is below max limit
+        if ext in optimizable_templates and (maxFileSizeMB is None or os.stat(filepath).st_size/1024/1024 <= maxFileSizeMB):
+            if not os.path.isdir(targetDir):
+                os.mkdir(targetDir)
+        
+            # When first user runs optimization, creates flag file that gets deleted after whole optimization is done
+            # If another user wants to read the Excel file while the optimization is running, the flag file will be present
+            flag_filepath = os.path.join(targetDir, flagFilename)
+            with open(flag_filepath, 'w'):
+                pass
+            
+            try:
+                for item in workbook.defined_names.definedName:
+                    try:
+                        if not item.is_external and item.type == 'RANGE' and item.attr_text and '!$' in item.attr_text:
+                            target_filepath = os.path.join(targetDir, f'{item.name}.pkl')
+                            if os.path.isfile(target_filepath):
+                                os.remove(target_filepath)
+
+                            dests = item.destinations
+                            for title, coord in dests:
+                                if title in workbook:
+                                    ws = workbook[title]
+                                    rangeToRead = ws[coord]
+                                    if not isinstance(rangeToRead, tuple):
+                                        rangeToRead = ((rangeToRead,),)
+
+                                    cols = []
+                                    values = []
+                                    for index, row in enumerate(rangeToRead):
+                                        if index == 0:
+                                            cols = [str(c.value) for c in row]
+                                        else:
+                                            values.append([c.value for c in row])
+                                    nn = 0
+                                    _finalCols = []
+                                    for _col in cols:
+                                        if _col is None:
+                                            _finalCols.append(f'Unnamed{str(nn)}')
+                                            nn += 1
+                                        else:
+                                            _finalCols.append(_col)
+                                    df = pd.DataFrame(values, columns=_finalCols).dropna(how='all')
+                                    df.to_pickle(target_filepath, compression='gzip')
+                    except Exception as e:
+                        print(f"Could not generate pkl for range '{item.name}'. Error: {e}")
+            finally:
+                os.remove(flag_filepath)
