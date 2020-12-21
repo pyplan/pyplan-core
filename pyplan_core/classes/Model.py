@@ -230,7 +230,9 @@ class Model(object):
     def isNodeInScenario(self, nodeId):
         return nodeId in self._scenarioDic
 
-    def evaluateNode(self, nodeId, dims=None, rows=None, columns=None, summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
+    def evaluateNode(self, nodeId, dims=None, rows=None, columns=None, summaryBy='sum',
+                     bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None,
+                     rowOrder='original', columnOrder='original'):
         """Evaluate node. Call evaluator class for implement diferent evaluators."""
         if self.existNode(nodeId):
             result = None
@@ -242,7 +244,9 @@ class Model(object):
             if not result is None:
                 self.evaluationVersion += 1
                 evaluator = Evaluator.createInstance(result)
-                return evaluator.evaluateNode(result, self.nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow, hideEmpty)
+                return evaluator.evaluateNode(result, self.nodeDic, nodeId, dims, rows, columns,
+                                              summaryBy, bottomTotal, rightTotal, fromRow, toRow,
+                                              hideEmpty, rowOrder, columnOrder)
         return ''
 
     def executeButton(self, nodeId):
@@ -360,7 +364,8 @@ class Model(object):
         nodeList = self.findNodes('moduleId', moduleId)
         nodeList.sort(key=lambda x: int(x.z))
         for node in nodeList:
-            exceptions = ['definition'] if node.nodeClass == 'text' else ['definition', 'description']
+            exceptions = ['definition'] if node.nodeClass == 'text' else [
+                'definition', 'description']
             res['nodes'].append(node.toObj(
                 exceptions=exceptions, fillDefaultProperties=True))
         return res

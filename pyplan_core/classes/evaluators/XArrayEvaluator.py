@@ -16,11 +16,19 @@ class XArrayEvaluator(BaseEvaluator):
 
     MAX_COLUMS = 5000
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None,
+                     summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, toRow=0,
+                     hideEmpty=None, rowOrder='original', columnOrder='original'):
+    
         if isinstance(result, xr.DataArray):
-            return self.cubeEvaluate(result, nodeDic, nodeId, dims, rows, columns, summaryBy, bottomTotal, rightTotal, fromRow, toRow, hideEmpty)
+            return self.cubeEvaluate(result, nodeDic, nodeId, dims, rows, columns,
+                                     summaryBy, bottomTotal, rightTotal, fromRow, toRow,
+                                     hideEmpty, rowOrder, columnOrder)
 
-    def cubeEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
+    def cubeEvaluate(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None,
+                     summaryBy='sum', bottomTotal=False, rightTotal=False, fromRow=0, 
+                     toRow=0, hideEmpty=None, rowOrder='original', columnOrder='original'):
+        
         sby = np.nansum
         if summaryBy == 'avg':
             sby = np.nanmean
@@ -117,6 +125,15 @@ class XArrayEvaluator(BaseEvaluator):
                                                      not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
                 except:
                     pass
+        
+        # Sort rows` labels
+        if rowOrder != 'original' and len(_rows) > 0:
+            asc = rowOrder == 'ascending'
+            tmp = tmp.sortby(_rows[0], ascending=asc)
+        # Sort columns` labels
+        if columnOrder != 'original' and len(_columns) > 0:
+            asc = columnOrder == 'ascending'
+            tmp = tmp.sortby(_columns[0], ascending=asc)
 
         finalValues = tmp.values
         finalIndexes = []
