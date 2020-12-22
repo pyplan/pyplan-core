@@ -15,7 +15,9 @@ class PandasEvaluator(BaseEvaluator):
 
     MAX_COLUMS = 5000
 
-    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None, summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0, hideEmpty=None):
+    def evaluateNode(self, result, nodeDic, nodeId, dims=None, rows=None, columns=None,
+                     summaryBy="sum", bottomTotal=False, rightTotal=False, fromRow=0, toRow=0,
+                     hideEmpty=None, rowOrder='original', columnOrder='original'):
         sby = np.nansum
         if summaryBy == 'avg':
             sby = np.nanmean
@@ -65,7 +67,16 @@ class PandasEvaluator(BaseEvaluator):
             if not dfResult.index is None and not dfResult.index.names is None and len(dfResult.index.names) > 0 and not dfResult.index.names[0] is None:
                 serieResult = dfResult.agg(sby)
                 dfResult = pd.DataFrame({"total": serieResult}).T
-
+            
+            # Sort dataframe. rowOrder/columnOrder options: [`original`, `ascending`, `descending`]
+            # Sort rows` labels
+            if rowOrder != 'original' and len(dfResult) > 1:
+                asc = rowOrder == 'ascending'
+                dfResult = dfResult.sort_index(axis='index', ascending=asc)
+            # Sort columns` labels
+            if columnOrder != 'original' and len(dfResult.columns) > 1:
+                asc = columnOrder == 'ascending'
+                dfResult = dfResult.sort_index(axis='columns', ascending=asc)
         else:
             needT = False
             if len(_rows) == 0:
@@ -76,19 +87,30 @@ class PandasEvaluator(BaseEvaluator):
 
             _filteredDataFrame = self.applyFilter(theResult, _filters)
 
-            # Don't use margins = True to obtain totals. This have a bug for dataframes with more than 5 level indexes
+            # Don`t use margins = True to obtain totals. This has a bug for dataframes with more than 5 MultiIndex levels
             dfResult = pd.DataFrame.pivot_table(
                 _filteredDataFrame, index=_rows, columns=_columns, aggfunc=sby, margins=False, margins_name="Total")
 
-            # apply orders to result (pivot_table don't mantain the original order)
+            # Sort dataframe. rowOrder/columnOrder options: [`original`, `ascending`, `descending`]
+            # Sort rows` labels
             if len(_rows) > 0:
-                dfResult = dfResult.reindex(
-                    index=_filteredDataFrame.index.get_level_values(_rows[0]).unique().tolist())
+                if rowOrder == 'original':
+                    # apply orders to result (pivot_table doesn`t keep original order)
+                    dfResult = dfResult.reindex(
+                        index=_filteredDataFrame.index.get_level_values(_rows[0]).unique().tolist())
+                else:
+                    asc = rowOrder == 'ascending'
+                    dfResult = dfResult.sort_index(axis='index', level=_rows[0], ascending=asc)
+            # Sort columns` labels
             if len(_columns) > 0:
-                level = 1 if isinstance(dfResult.columns, pd.MultiIndex) and len(
-                    dfResult.columns.levels) > 1 else 0
-                dfResult = dfResult.reindex(columns=_filteredDataFrame.index.get_level_values(
-                    _columns[0]).unique().tolist(), level=level)
+                if columnOrder == 'original':
+                    level = 1 if isinstance(dfResult.columns, pd.MultiIndex) and len(dfResult.columns.levels) > 1 else 0
+                    dfResult = dfResult.reindex(
+                        columns=_filteredDataFrame.index.get_level_values(_columns[0]).unique().tolist(), 
+                        level=level)
+                else:
+                    asc = columnOrder == 'ascending'
+                    dfResult = dfResult.sort_index(axis='columns', ascending=asc)
 
             if needT:
                 dfResult = dfResult.T
