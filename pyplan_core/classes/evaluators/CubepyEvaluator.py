@@ -215,7 +215,7 @@ class CubepyEvaluator(BaseEvaluator):
             dataArray = xr.DataArray(cube.values, _coords)
 
             # perform aggregate
-            dataArray.coords[levels[0]].values = coordValues
+            dataArray = dataArray.assign_coords({levels[0]: coordValues})
             _df = dataArray.to_series()
             _df = _df.groupby(list(dataArray.dims), sort=False).agg(sby)
             _da = _df.to_xarray()

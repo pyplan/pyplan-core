@@ -405,10 +405,8 @@ class PyplanFunctions(object):
 
             if len(oldIndex.values) == len(newIndex.values):
                 _tmp = _da.copy()
-                _tmp.coords[newIndex.name] = _tmp.coords[oldIndex.name]
-                _tmp.coords[newIndex.name].data = newIndex.values
-                _tmp = _tmp.swap_dims(
-                    {oldIndex.name: newIndex.name}).drop(oldIndex.name)
+                _tmp = _tmp.assign_coords({oldIndex.name: newIndex.values})
+                _tmp = _tmp.rename({oldIndex.name: newIndex.name})
                 return _tmp
             elif len(oldIndex.values) > len(newIndex.values):
                 raise ValueError(
@@ -703,7 +701,7 @@ class PyplanFunctions(object):
             valueIndex = None
             if isinstance(valueColumns, pd.Index):
                 valueIndex = valueColumns
-                valueColumns = valueIndex.values
+                valueColumns = valueIndex.tolist()
             elif isinstance(valueColumns, str):
                 valueColumns = [valueColumns]
 
@@ -723,8 +721,11 @@ class PyplanFunctions(object):
             for col in cols_not_in_df:
                 dataframe[col] = np.nan
 
-            _full = dataframe.reset_index().melt(id_vars=indexColumnHeaders,
-                                                 value_vars=valueColumns, var_name="data_index", value_name="data_value")
+            _full = dataframe.reset_index()[indexColumnHeaders + valueColumns].melt(
+                id_vars=indexColumnHeaders,
+                value_vars=valueColumns,
+                var_name="data_index",
+                value_name="data_value")
 
             # sum for acum over duplicate records
             _full = _full.groupby(_allIndexNames, as_index=False).sum()
