@@ -41,6 +41,8 @@ class Model(object):
         'xr': xr
     }
 
+    DASH_APP_PREFIX = 'dash_app_id_'
+
     def __init__(self, WSClass=None):
         self._nodeDic = {}
         self._modelProp = {}
@@ -873,7 +875,7 @@ class Model(object):
         res = []
         for k, v in self.nodeDic.items():
             if getattr(v, prop) == value:
-                if(not v.system):
+                if(not v.system and not v.nodeClass == 'dashapp'):
                     res.append(self.nodeDic[k])
         return res
 
@@ -1115,7 +1117,7 @@ class Model(object):
         }
 
         for k, v in self.nodeDic.items():
-            if(not v.system):
+            if(not v.system and not v.nodeClass == 'dashapp'):
                 toSave['nodeList'].append(v.toObj())
 
         if fileName:
@@ -1865,3 +1867,42 @@ class Model(object):
         if not p2.match(final_text[0]):
             final_text = 'a' + final_text[1:]
         return final_text
+
+    def createDashApp(self, dash_id, code, params):
+        """Create node with dash application code. Return initial dispatch"""
+        # create node
+        node_id = Model.DASH_APP_PREFIX + str(dash_id)
+        pathname_prefix = f'/api/i/{dash_id}/{self.getNode("pyplan_user").result["session_key"]}/'
+        node = None
+        if not self.existNode(node_id):
+            node = self.createNode(identifier=node_id,
+                                   nodeClass='dashapp',
+                                   moduleId=self.modelNode.identifier)
+        else:
+            node = self.getNode(node_id)
+
+        node.definition = f"""def _create_app(**kwargs):
+    {code}
+    return app
+result = _create_app(routes_pathname_prefix='{pathname_prefix}')"""
+
+        return self.dispatchDashApp(dash_id, params)
+
+    def dispatchDashApp(self, dash_id, params):
+        """Dispath Dash Application"""
+
+        node_id = Model.DASH_APP_PREFIX + str(dash_id)
+        # TODO: wrapper error
+
+        app = self.getNode(node_id).result
+        if not app is None:
+            with app.server.test_request_context(**params):
+                app.server.preprocess_request()
+                response = None
+                try:
+                    response = app.server.full_dispatch_request()
+                except Exception as e:
+                    response = app.server.make_response(
+                        app.server.handle_exception(e))
+
+                return response.get_data()
