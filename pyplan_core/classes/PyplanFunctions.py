@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from openpyxl import load_workbook
 
-from .ws.settings import ws_settings
+from .ws.settings import not_levels
 
 try:
     from StringIO import StringIO as BytesIO
@@ -1163,18 +1163,18 @@ class PyplanFunctions(object):
 
         return Selector(options, selected, multiselect)
 
-    def send_message(self, message_text, message_title=None, not_level_reverse="info"):
+    def send_message(self, message_text, message_title=None, not_level="info"):
         """Sends message to UI. Only used with Pyplan UI
            Ex.
                pp.send_message("The process has been completed","Process complete!","success")            
         """
 
         if self.model and self.model.ws:
-            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
-                not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
-            self.model.ws.sendMsg(message_text, message_title, not_level)
+            notification_levels = [not_levels.INFO,not_levels.SUCCESS,not_levels.WARNING,not_levels.ERROR]
+            not_level =  not_level if not_level in notification_levels else not_level.INFO
+            self.model.ws.ws_notification_message(message=message_text, title=message_title, not_level=not_level)
 
-    def progressbar(self, progress, message_text="", not_level_reverse="info"):
+    def progressbar(self, progress, message_text="", not_level="info"):
         """Creates and updates progress bar. Only used with Pyplan UI
            Ex.
                pp.progressbar(20, "Step 1","info")
@@ -1182,9 +1182,9 @@ class PyplanFunctions(object):
         """
 
         if self.model and self.model.ws:
-            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
-                not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
-            self.model.ws.progressbar(progress, message_text, not_level)
+            notification_levels = [not_levels.INFO,not_levels.SUCCESS,not_levels.WARNING,not_levels.ERROR]
+            not_level =  not_level if not_level in notification_levels else not_level.INFO
+            self.model.ws.ws_notification_progress_bar(progress=progress, message=message_text, not_level=not_level)
 
     def create_report(self, reportItems, reportIndexName="Report index", reportIndex=None):
         """Concatenates the reportItems dic dataArrays along the reportIndex dimension
