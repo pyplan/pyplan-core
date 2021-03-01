@@ -27,7 +27,7 @@ from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
                                          DataframeGroupby, DataframeIndex,
                                          InputTable, SelectColumns, SelectRows,
                                          sourcecsv, CreateIndex, IndexFromPandas, DataArrayFilter, EditIndex, RenameIndexItem)
-from pyplan_core.classes.ws.settings import ws_settings
+from pyplan_core.classes.ws.settings import not_levels
 
 from .DefaultNodeFormats import default_formats
 
@@ -290,7 +290,7 @@ class Model(object):
             return result
         finally:
             if self.debugMode and self.ws:
-                self.ws.sendDebugInfo("endPreview", "", "endPreview")
+                self.ws.ws_node_debug_information(node="endPreview", title="", action="endPreview")
             self.debugMode = None
 
     def getCubeValues(self, query):
@@ -1732,9 +1732,9 @@ class Model(object):
 
             return _used_libraries
         except Exception as ex:
-            if self.ws:
-                self.ws.sendMsg(str(ex), 'Error getting used libraries',
-                                not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
+            if self.ws:                
+                self.ws.ws_notification_message(message=str(ex), title='Error getting used libraries',
+                                not_level=not_levels.ERROR)
             return []
 
     def _check_import_function(self, _element):
@@ -1789,8 +1789,8 @@ class Model(object):
             return installed_libraries
         except Exception as ex:
             if self.ws:
-                self.ws.sendMsg(str(ex), 'Error checking installed libraries',
-                                not_level=ws_settings.NOTIFICATION_LEVEL_ERROR)
+                self.ws.ws_notification_message(message=str(ex), title='Error checking installed libraries',
+                                not_level=not_levels.ERROR)
             return {}
 
     def listInstalledLibraries(self):
