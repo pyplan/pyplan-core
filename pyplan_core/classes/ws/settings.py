@@ -25,19 +25,19 @@ class _MESSAGES(object):
     def __init__(self, _type):
         # group join messages
         if _type == _TYPES(_COMMANDS().JOIN_GROUP).GROUP_JOIN:
-            self.ENTER = 'ENTER GROUP'
+            self.ENTER_GROUP = 'ENTER_GROUP'
         # group leave messages
         elif _type == _TYPES(_COMMANDS().LEAVE_GROUP).GROUP_LEAVE:
-            self.LEAVE = 'LEAVE GROUP'
+            self.LEAVE_GROUP = 'LEAVE_GROUP'
         # group model messages
         elif _type == _TYPES(_COMMANDS().SEND_TO_GROUP).GROUP_MODEL:
-            self.OPENING_MODEL = 'OPENING MODEL'
-            self.NODE_BUTTON_FINISH_PROCESSING = 'NODE BUTTON FINISH PROCESSING'
-            self.NODE_DEBUG_INFORMATION = 'NODE DEBUG INFORMATION'
+            self.OPENING_MODEL = 'OPENING_MODEL'
+            self.NODE_BUTTON_FINISH_PROCESSING = 'NODE_BUTTON_FINISH_PROCESSING'
+            self.NODE_DEBUG_INFORMATION = 'NODE_DEBUG_INFORMATION'
         # group notification messages
         elif _type == _TYPES(_COMMANDS().SEND_TO_GROUP).GROUP_NOTIFICATION:
             self.STANDARD = 'STANDARD'
-            self.PROGRESS_BAR = 'PROGRESS BAR'
+            self.PROGRESS_BAR = 'PROGRESS_BAR'
             self.KILLED_SESSION = 'KILLED_SESSION'
 
 
