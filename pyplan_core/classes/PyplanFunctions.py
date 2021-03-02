@@ -1163,7 +1163,7 @@ class PyplanFunctions(object):
 
         return Selector(options, selected, multiselect)
 
-    def send_message(self, message_text, message_title=None, not_level="info"):
+    def send_message(self, message_text, message_title=None, not_level_reverse="info"):
         """Sends message to UI. Only used with Pyplan UI
            Ex.
                pp.send_message("The process has been completed","Process complete!","success")            
@@ -1171,10 +1171,10 @@ class PyplanFunctions(object):
 
         if self.model and self.model.ws:
             notification_levels = [not_levels.INFO,not_levels.SUCCESS,not_levels.WARNING,not_levels.ERROR]
-            not_level =  not_level if not_level in notification_levels else not_level.INFO
-            self.model.ws.ws_notification_message(message=message_text, title=message_title, not_level=not_level)
+            not_level_reverse =  not_level_reverse if not_level_reverse in notification_levels else not_levels.INFO
+            self.model.ws.ws_notification_message(message=message_text, title=message_title, not_level=not_level_reverse)
 
-    def progressbar(self, progress, message_text="", not_level="info"):
+    def progressbar(self, progress, message_text="", not_level_reverse="info"):
         """Creates and updates progress bar. Only used with Pyplan UI
            Ex.
                pp.progressbar(20, "Step 1","info")
@@ -1183,8 +1183,8 @@ class PyplanFunctions(object):
 
         if self.model and self.model.ws:
             notification_levels = [not_levels.INFO,not_levels.SUCCESS,not_levels.WARNING,not_levels.ERROR]
-            not_level =  not_level if not_level in notification_levels else not_level.INFO
-            self.model.ws.ws_notification_progress_bar(progress=progress, message=message_text, not_level=not_level)
+            not_level_reverse =  not_level_reverse if not_level_reverse in notification_levels else not_levels.INFO
+            self.model.ws.ws_notification_progress_bar(progress=progress, message=message_text, not_level=not_level_reverse)
 
     def create_report(self, reportItems, reportIndexName="Report index", reportIndex=None):
         """Concatenates the reportItems dic dataArrays along the reportIndex dimension

@@ -1,51 +1,61 @@
-class ws_settings:
+# Commands
+class _COMMANDS(object):
+    def __init__(self):
+        self.JOIN_GROUP = 'join_group'
+        self.LEAVE_GROUP = 'leave_group'
+        self.SEND_TO_GROUP = 'send_to_group'
+
+# Types by command
+class _TYPES(object):
+    def __init__(self, command):
+        # join group
+        if command == _COMMANDS().JOIN_GROUP:
+            self.GROUP_JOIN = 'group.join'
+        # leave group
+        elif command == _COMMANDS().LEAVE_GROUP:
+            self.GROUP_LEAVE = 'group.leave'
+        # send to group (Types name.name will become methods name_name inside the consumer)
+        elif command == _COMMANDS().SEND_TO_GROUP:
+            self.GROUP_MODEL = 'group.model'
+            self.GROUP_NOTIFICATION = 'group.notification'
+            self.GROUP_SCHEDULETASK = 'group.scheduletask'
+
+# Messages by type
+class _MESSAGES(object):
+    def __init__(self, _type):
+        # group join messages
+        if _type == _TYPES(_COMMANDS().JOIN_GROUP).GROUP_JOIN:
+            self.ENTER = 'ENTER GROUP'
+        # group leave messages
+        elif _type == _TYPES(_COMMANDS().LEAVE_GROUP).GROUP_LEAVE:
+            self.LEAVE = 'LEAVE GROUP'
+        # group model messages
+        elif _type == _TYPES(_COMMANDS().SEND_TO_GROUP).GROUP_MODEL:
+            self.OPENING_MODEL = 'OPENING MODEL'
+            self.NODE_BUTTON_FINISH_PROCESSING = 'NODE BUTTON FINISH PROCESSING'
+            self.NODE_DEBUG_INFORMATION = 'NODE DEBUG INFORMATION'
+        # group notification messages
+        elif _type == _TYPES(_COMMANDS().SEND_TO_GROUP).GROUP_NOTIFICATION:
+            self.STANDARD = 'STANDARD'
+            self.PROGRESS_BAR = 'PROGRESS BAR'
+            self.KILLED_SESSION = 'KILLED_SESSION'
+
+
+class ws_settings(object):
+
     NOTIFY_USERS_ON_ENTER_OR_LEAVE_GROUPS = False
 
-    # Commands
-    COMMANDS = {
-        JOIN_GROUP: 'join_group',
-        LEAVE_GROUP: 'leave_group',
-        SEND_TO_GROUP: 'send_to_group'
-    }
+    @classmethod
+    def COMMANDS(cls):
+        return _COMMANDS()
 
-    # Types by command
-    # join group
-    TYPES[COMMAND.JOIN_GROUP] = {
-        GROUP_JOIN: 'group.join'
-    }
-    # leave group
-    TYPES[COMMAND.LEAVE_GROUP] = {
-        GROUP_LEAVE: 'group.leave'
-    }
-    # send to group (Types name.name will become methods name_name inside the consumer)
-    TYPES[COMMAND.SEND_TO_GROUP] = {
-        GROUP_MODEL: 'group.model',
-        GROUP_NOTIFICATION: 'group.notification',
-        GROUP_SCHEDULETASK = 'group.scheduletask'
-    }
+    @classmethod
+    def TYPES(cls, _command):
+        return _TYPES(_command)
 
-    # Messages by type
-    # group join messages
-    MESSAGES[TYPE[COMMAND.JOIN_GROUP].GROUP_JOIN] = {
-        ENTER = 'ENTER GROUP',
-    }
-    # group leave messages
-    MESSAGES[TYPE[COMMAND.LEAVE_GROUP].GROUP_LEAVE] = {
-        LEAVE = 'LEAVE GROUP',
-    }
-    # group model messages
-    MESSAGES[TYPE[COMMAND.GROUP_NOTIFICATION].GROUP_MODEL] = {
-        OPENING_MODEL: 'OPENING MODEL',
-        NODE_PROCESSING: 'NODE PROCESSING',
-        NODE_DEBUG_INFORMATION: 'NODE DEBUG INFORMATION'
-
-    }
-    # group notification messages
-    MESSAGES[TYPE[COMMAND.GROUP_NOTIFICATION].GROUP_NOTIFICATION] = {
-        STANDARD: 'STANDARD',
-        PROGRESS_BAR: 'PROGRESS BAR',
-        KILLED_SESSION: 'KILLED_SESSION'
-    }
+    @classmethod
+    def MESSAGES(cls, _type):
+        return _MESSAGES(_type)
 
 
 class not_levels:
