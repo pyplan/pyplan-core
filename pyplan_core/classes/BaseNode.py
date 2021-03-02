@@ -824,8 +824,8 @@ class BaseNode(object):
 
     def sendStartCalcNode(self, fromCircularEvaluator=False, fromDynamic=False):
         if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
-            self._model.ws.sendDebugInfo(
-                self.identifier, self.title if self.title else "", "startCalc", fromDynamic=fromDynamic)
+            self._model.ws.ws_node_debug_information(
+                node=self.identifier, title=self.title if self.title else "", action="startCalc", fromDynamic=fromDynamic)
 
     def sendEndCalcNode(self, fromCircularEvaluator=False, fromDynamic=False):
         if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
@@ -838,8 +838,8 @@ class BaseNode(object):
                     "totalMemory": 0
                 }
 
-            self._model.ws.sendDebugInfo(
-                self.identifier, self.title if self.title else "", "endCalc", self.lastEvaluationTime, resources["usedMemory"], resources["totalMemory"], resources["maxMemory"], fromDynamic=fromDynamic)
+            self._model.ws.ws_node_debug_information(
+                node=self.identifier, title=self.title if self.title else "", action="endCalc", time=self.lastEvaluationTime, usedMemory=resources["usedMemory"], totalMemory=resources["totalMemory"], maxMemory=resources["maxMemory"], fromDynamic=fromDynamic)
 
     # ***********************************
     # *** CYCLICK EVALUATOR  METHODS  ***
