@@ -16,6 +16,7 @@ import jsonpickle
 import numpy
 import pandas
 import xarray as xr
+from dash import Dash
 
 from pyplan_core import cubepy
 from pyplan_core.classes.BaseNode import BaseNode
@@ -41,7 +42,6 @@ class Model(object):
         'xr': xr
     }
 
-    DASH_APP_PREFIX = 'dash_app_id_'
 
     def __init__(self, WSClass=None):
         self._nodeDic = {}
@@ -875,7 +875,7 @@ class Model(object):
         res = []
         for k, v in self.nodeDic.items():
             if getattr(v, prop) == value:
-                if(not v.system and not v.nodeClass == 'dashapp'):
+                if not v.system:
                     res.append(self.nodeDic[k])
         return res
 
@@ -1117,7 +1117,7 @@ class Model(object):
         }
 
         for k, v in self.nodeDic.items():
-            if(not v.system and not v.nodeClass == 'dashapp'):
+            if not v.system:
                 toSave['nodeList'].append(v.toObj())
 
         if fileName:
@@ -1868,34 +1868,20 @@ class Model(object):
             final_text = 'a' + final_text[1:]
         return final_text
 
-    def createDashApp(self, dash_id, code, params):
-        """Create node with dash application code. Return initial dispatch"""
-        # create node
-        node_id = Model.DASH_APP_PREFIX + str(dash_id)
-        pathname_prefix = f'/api/i/{dash_id}/{self.getNode("pyplan_user").result["session_key"]}/'
-        node = None
-        if not self.existNode(node_id):
-            node = self.createNode(identifier=node_id,
-                                   nodeClass='dashapp',
-                                   moduleId=self.modelNode.identifier)
-        else:
-            node = self.getNode(node_id)
-
-        node.definition = f"""def _create_app(**kwargs):
-    {code}
-    return app
-result = _create_app(routes_pathname_prefix='{pathname_prefix}')"""
-
-        return self.dispatchDashApp(dash_id, params)
-
-    def dispatchDashApp(self, dash_id, params):
+    def dispatchDashApp(self, node_id, params):
         """Dispath Dash Application"""
-
-        node_id = Model.DASH_APP_PREFIX + str(dash_id)
-        # TODO: wrapper error
-
         app = self.getNode(node_id).result
+        if not isinstance(app, Dash):
+            return b'<html><body><h5>The node must be a Dash application</h5><body><html>'
+        pathname_prefix = f'/api/dashapp/{node_id}/{self.getNode("pyplan_user").result["session_key"]}/'
         if not app is None:
+            app.config.set_read_only([])
+            app.config['requests_pathname_prefix'] = pathname_prefix
+            app.config['routes_pathname_prefix'] = pathname_prefix
+
+            if pathname_prefix in params["path"]:
+                params["path"] = params["path"][len(pathname_prefix)-1:]
+
             with app.server.test_request_context(**params):
                 app.server.preprocess_request()
                 response = None
