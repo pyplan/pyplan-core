@@ -96,18 +96,11 @@ class Model(object):
         return self.session_key
 
     def setWs(self, company_code, session_key):
-        logger = getLogger('django')
-        logger.info('EN SETWS')
-        logger.info(f'session_key -> {session_key}')
-        logger.info(f'company_code -> {company_code}')
-        logger.info(f'self.WS -> {self.WS}')
         if company_code is not None and session_key is not None and self.WS is not None:
-            logger.info('INGRESE AL IF CONNECT WS')
             self.company_code = company_code
             self.session_key = session_key
             self.ws = self.WS(company_code=company_code,
                               session_key=session_key)
-        logger.info('==============================================')
         return self.ws
 
     def getDefaultNodeFormat(self, nodeClass):
