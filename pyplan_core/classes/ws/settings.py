@@ -1,65 +1,86 @@
-# Commands
-class _COMMANDS(object):
-    def __init__(self):
-        self.JOIN_GROUP = 'join_group'
-        self.LEAVE_GROUP = 'leave_group'
-        self.SEND_TO_GROUP = 'send_to_group'
+from enum import Enum
 
-# Types by command
-class _TYPES(object):
-    def __init__(self, command):
-        # join group
-        if command == _COMMANDS().JOIN_GROUP:
-            self.GROUP_JOIN = 'group.join'
-        # leave group
-        elif command == _COMMANDS().LEAVE_GROUP:
-            self.GROUP_LEAVE = 'group.leave'
-        # send to group (Types name.name will become methods name_name inside the consumer)
-        elif command == _COMMANDS().SEND_TO_GROUP:
-            self.GROUP_MODEL = 'group.model'
-            self.GROUP_NOTIFICATION = 'group.notification'
-            self.GROUP_SCHEDULETASK = 'group.scheduletask'
-
-# Messages by type
-class _MESSAGES(object):
-    def __init__(self, _type):
-        # group join messages
-        if _type == _TYPES(_COMMANDS().JOIN_GROUP).GROUP_JOIN:
-            self.ENTER_GROUP = 'ENTER_GROUP'
-        # group leave messages
-        elif _type == _TYPES(_COMMANDS().LEAVE_GROUP).GROUP_LEAVE:
-            self.LEAVE_GROUP = 'LEAVE_GROUP'
-        # group model messages
-        elif _type == _TYPES(_COMMANDS().SEND_TO_GROUP).GROUP_MODEL:
-            self.OPENING_MODEL = 'OPENING_MODEL'
-            self.NODE_BUTTON_FINISH_PROCESSING = 'NODE_BUTTON_FINISH_PROCESSING'
-            self.NODE_DEBUG_INFORMATION = 'NODE_DEBUG_INFORMATION'
-        # group notification messages
-        elif _type == _TYPES(_COMMANDS().SEND_TO_GROUP).GROUP_NOTIFICATION:
-            self.STANDARD = 'STANDARD'
-            self.PROGRESS_BAR = 'PROGRESS_BAR'
-            self.KILLED_SESSION = 'KILLED_SESSION'
+# PRIVATE HELPERS
 
 
-class ws_settings(object):
+class _ValEnum(Enum):
+    def __str__(self):
+        return str(self.value)
 
-    NOTIFY_USERS_ON_ENTER_OR_LEAVE_GROUPS = False
+    def __repr__(self):
+        return str(self.value)
 
-    @classmethod
-    def COMMANDS(cls):
-        return _COMMANDS()
-
-    @classmethod
-    def TYPES(cls, _command):
-        return _TYPES(_command)
-
-    @classmethod
-    def MESSAGES(cls, _type):
-        return _MESSAGES(_type)
+# types enums
 
 
-class not_levels:
-    # NOTIFICATION LEVELS (USED FOR TYPE group.notification)
+class _GroupJoin(_ValEnum):
+    GROUP_JOIN = 'group.join'
+
+
+class _GroupLeave(_ValEnum):
+    GROUP_LEAVE = 'group.leave'
+
+
+class _GroupSend(_ValEnum):
+    GROUP_MODEL = 'group.model'
+    GROUP_NOTIFICATION = 'group.notification'
+    GROUP_SCHEDULETASK = 'group.scheduletask'
+
+# messages enums
+
+
+class _EnterGroup(_ValEnum):
+    ENTER_GROUP = 'ENTER_GROUP'
+
+
+class _LeaveGroup(_ValEnum):
+    LEAVE_GROUP = 'LEAVE_GROUP'
+
+
+class _ModelGroup(_ValEnum):
+    OPENING_MODEL = 'OPENING_MODEL'
+    NODE_BUTTON_FINISH_PROCESSING = 'NODE_BUTTON_FINISH_PROCESSING'
+    NODE_DEBUG_INFORMATION = 'NODE_DEBUG_INFORMATION'
+
+
+class _NotificacionGroup(_ValEnum):
+    STANDARD = 'STANDARD'
+    PROGRESS_BAR = 'PROGRESS_BAR'
+    KILLED_SESSION = 'KILLED_SESSION'
+
+
+# WS COMMANDS, TYPES AND MESSAGES
+class Commands(Enum):
+    JOIN_GROUP = 'join_group'
+    LEAVE_GROUP = 'leave_group'
+    SEND_TO_GROUP = 'send_to_group'
+
+
+class TypesFactory(object):
+    def __new__(self, command: Commands):
+        if command == Commands.JOIN_GROUP:
+            return super(TypesFactory, self).__new__(_GroupJoin)
+        elif command == Commands.LEAVE_GROUP:
+            return super(TypesFactory, self).__new__(_GroupLeave)
+        elif command == Commands.SEND_TO_GROUP:
+            return super(TypesFactory, self).__new__(_GroupSend)
+
+
+class MessagesFactory(object):
+    def __new__(self, _type):
+        if _type == TypesFactory(Commands.JOIN_GROUP).GROUP_JOIN:
+            return super(MessagesFactory, self).__new__(_EnterGroup)
+        elif _type == TypesFactory(Commands.LEAVE_GROUP).GROUP_LEAVE:
+            return super(MessagesFactory, self).__new__(_LeaveGroup)
+        elif _type == TypesFactory(Commands.SEND_TO_GROUP).GROUP_MODEL:
+            return super(MessagesFactory, self).__new__(_ModelGroup)
+        elif _type == TypesFactory(Commands.SEND_TO_GROUP).GROUP_NOTIFICATION:
+            return super(MessagesFactory, self).__new__(_NotificacionGroup)
+
+# NOTIFICATION LEVELS (USED FOR TYPE group.notification)
+
+
+class NotLevels(Enum):
     INFO = 'info'
     SUCCESS = 'success'
     WARNING = 'warning'

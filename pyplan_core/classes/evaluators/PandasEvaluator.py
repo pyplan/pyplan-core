@@ -6,7 +6,7 @@ import pandas as pd
 from pyplan_core.classes.evaluators.BaseEvaluator import BaseEvaluator
 from pyplan_core.classes.common.filterChoices import filterChoices
 from pyplan_core.classes.common.indexValuesReq import IndexValuesReq
-from pyplan_core.classes.ws.settings import not_levels
+from pyplan_core.classes.ws.settings import NotLevels
 from pyplan_core.cubepy.cube import kindToString
 from pyplan_core import cubepy
 
@@ -129,7 +129,7 @@ class PandasEvaluator(BaseEvaluator):
                 except Exception as ex:
                     try:
                         nodeDic[nodeId].model.ws.ws_notification_message(message=str(ex), title='Error applying empty data filter',
-                                                         not_level=not_levels.ERROR)
+                                                         not_level=NotLevels.ERROR)
                     except:
                         pass
 

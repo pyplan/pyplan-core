@@ -16,18 +16,19 @@ import jsonpickle
 import numpy
 import pandas
 import xarray as xr
-
 from pyplan_core import cubepy
 from pyplan_core.classes.BaseNode import BaseNode
 from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.Intellisense import Intellisense
 from pyplan_core.classes.IOModule import IOModule
 from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
-from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
+from pyplan_core.classes.wizards import (CalculatedField, CreateIndex,
+                                         DataArrayFilter, DataarrayFromPandas,
                                          DataframeGroupby, DataframeIndex,
-                                         InputTable, SelectColumns, SelectRows,
-                                         sourcecsv, CreateIndex, IndexFromPandas, DataArrayFilter, EditIndex, RenameIndexItem)
-from pyplan_core.classes.ws.settings import not_levels
+                                         EditIndex, IndexFromPandas,
+                                         InputTable, RenameIndexItem,
+                                         SelectColumns, SelectRows, sourcecsv)
+from pyplan_core.classes.ws.settings import NotLevels
 
 from .DefaultNodeFormats import default_formats
 
@@ -58,6 +59,7 @@ class Model(object):
         self.session_key = None
         self.debugMode = None
         self.WS = WSClass
+        self.ws = None
 
     # Props
 
@@ -81,6 +83,32 @@ class Model(object):
 
     def getPID(self):
         return os.getpid()
+
+    def getCompanyCode(self):
+        return self.company_code
+
+    def getSessionKey(self):
+        return self.session_key
+
+    def setSessionKeyAndCompanyCode(self, session_key, company_code):
+        if session_key != self.session_key or company_code != self.company_code:
+            self.setWs(company_code, session_key)
+        return self.session_key
+
+    def setWs(self, company_code, session_key):
+        logger = getLogger('django')
+        logger.info('EN SETWS')
+        logger.info(f'session_key -> {session_key}')
+        logger.info(f'company_code -> {company_code}')
+        logger.info(f'self.WS -> {self.WS}')
+        if company_code is not None and session_key is not None and self.WS is not None:
+            logger.info('INGRESE AL IF CONNECT WS')
+            self.company_code = company_code
+            self.session_key = session_key
+            self.ws = self.WS(company_code=company_code,
+                              session_key=session_key)
+        logger.info('==============================================')
+        return self.ws
 
     def getDefaultNodeFormat(self, nodeClass):
         default_formats
@@ -114,14 +142,6 @@ class Model(object):
 
         self._scenarioDic = dict()
         self._wizard = None
-
-    def connectToWS(self, company_code, session_key):
-        # Connect to WS
-        self.company_code = company_code
-        self.session_key = session_key
-        if self.WS:
-            self.ws = self.WS(company_code=company_code,
-                              session_key=session_key)
 
     def createNode(self, identifier=None, nodeClass=None, moduleId=None, x=None, y=None, toObj=False, originalId=None):
         """Create new node"""
@@ -290,7 +310,8 @@ class Model(object):
             return result
         finally:
             if self.debugMode and self.ws:
-                self.ws.ws_node_debug_information(node="endPreview", title="", action="endPreview")
+                self.ws.ws_node_debug_information(
+                    node="endPreview", title="", action="endPreview")
             self.debugMode = None
 
     def getCubeValues(self, query):
@@ -1157,11 +1178,12 @@ class Model(object):
                     f.close()
         return jsonpickle.encode(toSave)
 
-    def openModel(self, fileName=None, textModel=None):
+    def openModel(self, fileName=None, company_code=None, session_key=None, textModel=None):
         """Open model.
         If fileName is especified then open from fileName, else open from textModel text """
 
         self.release()
+        self.setWs(company_code, session_key)
 
         opened = {}
         if textModel:
@@ -1630,19 +1652,30 @@ class Model(object):
                                    ] = installed_lib['version']
 
             to_install = ''
+
+            # send a message telling we are about to check libraries
+            if self.ws:
+                self.ws.ws_openening_model(
+                    title=f'Checking python libraries used in model', progress=75)
+
             for lib in modelLibs:
                 if not lib['name'] in installed_libs_dic:
                     to_install += f" {lib['name']}=={lib['version']}"
-                # TODO: if exists, check version and send message via channels
 
             if to_install != '':
-                self._installLibrary(to_install)
+                self._installLibrary(to_install, fromOpenModel=True)
+            else:
+                if self.ws:
+                    self.ws.ws_openening_model(
+                        title=f'Libraries already installed', progress=95)
 
         except Exception as ex:
             print(f'Error checking libraries. {ex}')
-            # TODO: send to client via channels
+            if self.ws:
+                self.ws.ws_notification_message(message=str(
+                    ex), title='Error checking libraries', not_level=NotLevels.ERROR)
 
-    def _installLibrary(self, lib):
+    def _installLibrary(self, lib, fromOpenModel=False):
 
         cmd = f'pip install {lib}'
 
@@ -1658,7 +1691,6 @@ class Model(object):
                              stderr=subprocess.PIPE, universal_newlines=True)
         nn = 0
         while p.stdout is not None and nn < 1200:
-            # TODO: show feedback to ide using channels
             line = p.stdout.readline()
             if not line:
                 p.stdout.flush()
@@ -1669,6 +1701,10 @@ class Model(object):
             sleep(1)
             nn += 1
             self._currentInstallProgress.append(line.rstrip('\n'))
+            # only send a ws message if we are opening a model
+            if self.ws and fromOpenModel:
+                self.ws.ws_openening_model(
+                    title=line.rstrip('\n'), progress=85)
 
         importlib.invalidate_caches()
 
@@ -1732,9 +1768,9 @@ class Model(object):
 
             return _used_libraries
         except Exception as ex:
-            if self.ws:                
+            if self.ws:
                 self.ws.ws_notification_message(message=str(ex), title='Error getting used libraries',
-                                not_level=not_levels.ERROR)
+                                                not_level=NotLevels.ERROR)
             return []
 
     def _check_import_function(self, _element):
@@ -1790,7 +1826,7 @@ class Model(object):
         except Exception as ex:
             if self.ws:
                 self.ws.ws_notification_message(message=str(ex), title='Error checking installed libraries',
-                                not_level=not_levels.ERROR)
+                                                not_level=NotLevels.ERROR)
             return {}
 
     def listInstalledLibraries(self):
