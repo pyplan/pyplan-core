@@ -16,11 +16,8 @@ import jsonpickle
 import numpy
 import pandas
 import xarray as xr
-<<<<<<< HEAD
 from dash import Dash
 
-=======
->>>>>>> tested and working
 from pyplan_core import cubepy
 from pyplan_core.classes.BaseNode import BaseNode
 from pyplan_core.classes.evaluators.Evaluator import Evaluator
@@ -46,7 +43,6 @@ class Model(object):
         'cubepy': cubepy,
         'xr': xr
     }
-
 
     def __init__(self, WSClass=None):
         self._nodeDic = {}
