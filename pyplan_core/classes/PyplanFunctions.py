@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from openpyxl import load_workbook
 
-from .ws.settings import ws_settings
+from .ws.settings import NotLevels
 
 try:
     from StringIO import StringIO as BytesIO
@@ -28,7 +28,7 @@ class PyplanFunctions(object):
 
     def set_domain(self, dataArray, domainDic, defaultValue=None):
         """Reindexes the dataArray by applying the indices of the domainDic param
-           
+
            Ex. 
                pp.set_domain(da,{"time":time_idex, "products":product_index})
         """
@@ -57,7 +57,7 @@ class PyplanFunctions(object):
 
     def create_dataarray(self, value, coords, dtype=None):
         """Creates a dataarray using an atomic value distributed along all dimensions 
-           
+
            Ex. 
                pp.create_dataarray(1., coords=[time_idex, product_index])
         """
@@ -121,7 +121,7 @@ class PyplanFunctions(object):
 
     def apply_fn(self, obj, applyFn, *args):
         """Applies "applyFn" to "obj" where obj can be DataArray or Index
-        
+
            Ex.
                pp.apply(dataArray, node_function)
         """
@@ -136,7 +136,7 @@ class PyplanFunctions(object):
     def subset(self, cube):
         """Returns an index with the elements of the index for which cube is true. The function is used to create a new
            index that is a subset of an existing index.
-        
+
            Ex. pp.subset(sales>0)
         """
 
@@ -290,7 +290,7 @@ class PyplanFunctions(object):
     def copy_as_values(self, source, targetId):
         """Copy values of datArray "source" into dataArray with id 'targetId'. This function alters the definition of 
            dataArray with 'targetId' identifier.
-           
+
            source: dataArray/index to copy values from
            targetId: identifier (string) of the target node 
         """
@@ -328,7 +328,7 @@ class PyplanFunctions(object):
 
     def excel_connection(self, filepath, useOpenpyxl=False, dataOnly=True, readOnly=True):
         """Creates Excel object from filepath.
-           
+
            filepath: path to excel file
            useOpenpyxl: bool 
            dataOnly: bool. True to only get values, not the formula
@@ -385,7 +385,7 @@ class PyplanFunctions(object):
 
     def change_index(self, dataArray, oldIndex, newIndex, compareMode=1, defaultValue=None):
         """Changes index of a dataArray object.
-           
+
            compareMode: 1: by Value (default), 2: by pos
            Ex.
                pp.change_index(dataArray, oldIndex, newIndex)
@@ -434,7 +434,7 @@ class PyplanFunctions(object):
 
     def pandas_from_excel(self, excel, sheetName=None, namedRange=None, cellRange=None, indexes=None, driver=""):
         """Returns a pandas DataFrame from Excel spreadsheet.
-           
+
            excel: excel file path or openpyxl workbook object
            sheetName: sheet name to be read
            namedRange: range name to be read
@@ -444,7 +444,7 @@ class PyplanFunctions(object):
                pp.pandas_from_excel(excelNode,"Sheet 1")
                pp.pandas_from_excel(excelNode,namedRange="name_range")
                pp.pandas_from_excel(excelNode,"Sheet 1",cellRange="A1:H10")
-           
+
            This function automatically generates pickles from every named range in excel file
            when excel parameter is a string.
         """
@@ -453,7 +453,7 @@ class PyplanFunctions(object):
         # pickles for every named range if they are newer than the Excel file (its modified date).
         # If they do not exist or are outdated, tries to generate one pickle for every named range in
         # the spreadsheet.
-        # Requirements: 
+        # Requirements:
         #   - it must have writing permissions,
         #   - it must have named ranges.
         # Otherwise, it should load the spreadsheet using openpyxl library and then read the sheet,
@@ -461,23 +461,26 @@ class PyplanFunctions(object):
 
         if isinstance(excel, str):
             if not os.path.isfile(excel):
-                excel = os.path.join(self.model.getNode("current_path").result, excel)
+                excel = os.path.join(self.model.getNode(
+                    "current_path").result, excel)
             filepath = excel
 
             # Only read/generate pickles for named ranges
             if namedRange is not None:
                 orig_dir, single_filename = os.path.split(filepath)
-                filename, _ = os.path.splitext(single_filename)                
+                filename, _ = os.path.splitext(single_filename)
                 target_dir = os.path.join(orig_dir, f".{filename}")
                 picklepath = os.path.join(target_dir, f"{namedRange}.pkl")
 
                 # Read from pickle if it is newer than Excel file
                 if os.path.isfile(picklepath) and os.path.getmtime(picklepath) >= os.path.getmtime(filepath):
                     return self.__read_pickle_df(filepath=picklepath, indexes=indexes)
-                
+
                 else:
-                    wb = load_workbook(filepath, data_only=True, read_only=True)
-                    named_ranges = [r.name for r in wb.defined_names.definedName]
+                    wb = load_workbook(
+                        filepath, data_only=True, read_only=True)
+                    named_ranges = [
+                        r.name for r in wb.defined_names.definedName]
 
                     # Check if user has writing permissions to generate new pickles and if namedRange exists
                     if os.access(excel, os.W_OK) and namedRange in named_ranges:
@@ -485,21 +488,22 @@ class PyplanFunctions(object):
                         flag_filepath = os.path.join(target_dir, flag_filename)
 
                         # Clean potentially old flag files
-                        self.__remove_old_file(filepath=flag_filepath, maxElapsedMinutes=60)
+                        self.__remove_old_file(
+                            filepath=flag_filepath, maxElapsedMinutes=60)
 
                         # If flag file exists (optimization is running), read directly from Excel
                         if os.path.isfile(flag_filepath):
                             return self.pandas_from_excel(wb, sheetName, namedRange, cellRange, indexes)
                         else:
                             self.__generate_pkl_from_excel(
-                                workbook=wb, filepath=filepath, targetDir=target_dir, 
+                                workbook=wb, filepath=filepath, targetDir=target_dir,
                                 maxFileSizeMB=100, flagFilename=flag_filename)
                             # Read file
                             if os.path.isfile(picklepath):
                                 return self.__read_pickle_df(filepath=picklepath, indexes=indexes)
                             else:
                                 return self.pandas_from_excel(wb, sheetName, namedRange, cellRange, indexes)
-                
+
                     # Read directly from Excel
                     else:
                         return self.pandas_from_excel(wb, sheetName, namedRange, cellRange, indexes)
@@ -520,7 +524,7 @@ class PyplanFunctions(object):
                 rangeToRead = ws[cellRange]
             else:
                 rangeToRead = excel[sheetName]
-            
+
             cols = []
             values = []
             for index, row in enumerate(rangeToRead):
@@ -544,7 +548,7 @@ class PyplanFunctions(object):
 
     def index_from_pandas(self, dataframe, columnName=None, removeEmpty=True):
         """Returns a pandas.Index from an column of a pandas dataframe.
-        
+
            dataframe: pandas dataframe
            columnName: dataframe column name used for create cp.index. By default is created using the first column
            removeEmpty: True for remove empty rows
@@ -568,7 +572,7 @@ class PyplanFunctions(object):
 
     def index_from_excel(self, excel, sheetName=None, namedRange=None, cellRange=None, columnName=None, removeEmpty=True):
         """Returns a pandas.Index from an excel file.
-           
+
            excel: pp.excel object
            sheetName: sheet name to be read
            namedRange: name of the range to be read
@@ -593,7 +597,7 @@ class PyplanFunctions(object):
         """Returns a DataArray (valueColumns is string or (valueColumns is pd.Index and valueColumnsAsDim is True)) 
            or Dataset (valueColumns is a list or (valueColumns is a pd.Index and valueColumnsAsDim is False)) from
            a Pandas dataframe applying the set_domain function.
-           
+
            dataframe: Pandas dataframe with no index columns.
            domainDic: Dictionary of column names and index names. Ex. {'Column Name': index_name}.
            valueColumns: String, list or pd.Index. Dataframe's value columns.
@@ -670,7 +674,7 @@ class PyplanFunctions(object):
 
     def dataarray_from_excel(self, excel, sheetName=None, namedRange=None, cellRange=None, indexes=None, valueColumns=None, indexColumnHeaders=None, replaceByIndex=None, defaultValue=0):
         """Returns a xr.DataArray from excel file.
-           
+
            excel: excel_connection object.
            sheetName: sheet name to be read
            namedRange: name of the range to be read.
@@ -784,7 +788,7 @@ class PyplanFunctions(object):
 
     def goal_seek(self, nodeIdX, nodeIdObjective, goal=0, startValue=1, matrixIndex=None):
         """Finds the value of nodeIdX that makes nodeIdObjective equal to goal.
-           
+
            nodeIdX: String with id of node X
            nodeIdObjective: String with id of node Objective
            matrixIndex: Index for multidimensional goal seek
@@ -862,9 +866,9 @@ class PyplanFunctions(object):
 
     def lookup(self, dataArray, dataMap, sharedIndex, defaultValue=0):
         """Returns the value of dataArray indexed by the index of dataMap.
-           
+
            dataArray must be indexed by sharedIndex and dataArray values must correspond to elements of sharedIndex.
-           
+
            For example: Let's say you have a dataArray with an estimated inflation rate by Country ("inflation_rate"
            is the name of the dataArray; "country" is the name of the index) and you want to assign it to the 
            corresponding Company depending on its location. On the other hand, there's a many-to-one map where each
@@ -887,7 +891,7 @@ class PyplanFunctions(object):
     def aggregate(self, dataArray, mapInfo, sourceIndex, targetIndex, aggregationFunction='sum'):
         """Converts dataArray, originally indexed by sourceIndex, to a dataArray indexed by targetIndex, aggregating
            according to the mapInfo‘s allocation of targetIndex: sourceIndex.
-           
+
            mapInfo: gives the value of targetIndex for each element of sourceIndex (If the map does not match then the
            element will not be set into target index and information will be lost)
            aggregationFuction (optional): especifies the function to be used when grouping data (sum, mean, min, max,
@@ -965,7 +969,7 @@ class PyplanFunctions(object):
 
     def dynamic(self, dataArray, index, shift, initialValues=None):
         """Performs cyclic calculations between nodes.
-           
+
            dataArray: dataArray to perform the ciclyc dependency calculation
            index: Index from dataArray to shift 
            shift: number of elemnts to shift. Can be positive or negative
@@ -994,7 +998,7 @@ class PyplanFunctions(object):
 
     def fill_inf(self, dataArray, value=0):
         """Fills np.inf values with value
-           
+
            Ex.
                pp.fill_inf(dataArray, 0)
         """
@@ -1011,7 +1015,7 @@ class PyplanFunctions(object):
 
     def add_periods(self, start, periods, freq='M', format='%Y.%m'):
         """Adds periods to a date. Allows setting freq and output format 
-           
+
            Ex.
                 pp.addPeriods('2016.01', 6)
                 pp.apply_fn(pp.addPeriods, projects_initial_date, projects_duration)
@@ -1068,7 +1072,7 @@ class PyplanFunctions(object):
     def subindex(self, dataArray, targetValue, targetIndex, method='Last'):
         """Returns a dataArray containing the value of targetIndex for which dataArray (indexed by targetIndex) is equal 
            to targetValue.
-           
+
            dataArray: Xarray dataArray.
            targetValue: Integer, Float or String.
            targetIndex: Pandas Index.
@@ -1100,7 +1104,7 @@ class PyplanFunctions(object):
         """Flattens array_param by replacing with a new index that includes all combinatios of values from
            index_param
         """
-        
+
         _index = pd.Index([])
         for i in index_param.values:
             _index = self.concat_index(_index, pd.Index(
@@ -1109,7 +1113,7 @@ class PyplanFunctions(object):
 
     def log_task(self, task_state="PROGRESS", task_description=None, task_activity=None, task_info=None):
         """Generates log entry. Used for schedule tasks
-            
+
            task_state: PROGRESS, INFO, WARNING, FAILURE, RETRY, SUCCESS, REVOKED, STARTED, PENDING, RECEIVED
            task_description: Shot description of task. example: start process
            task_activity: other short description
@@ -1155,7 +1159,7 @@ class PyplanFunctions(object):
 
     def selector(self, options, selected, multiselect=False):
         """Creates UI Pyplan selector for decision nodes
-           
+
            options: List or pandas.Index with values that can be selected 
            selected: current selected index value
            multiselect: True to allow multiple selection
@@ -1170,9 +1174,12 @@ class PyplanFunctions(object):
         """
 
         if self.model and self.model.ws:
-            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
-                not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
-            self.model.ws.sendMsg(message_text, message_title, not_level)
+            notification_levels = [
+                NotLevels.INFO, NotLevels.SUCCESS, NotLevels.WARNING, NotLevels.ERROR]
+            not_level_reverse = NotLevels(not_level_reverse) if NotLevels(
+                not_level_reverse) in notification_levels else NotLevels.INFO
+            self.model.ws.ws_notification_message(
+                message=message_text, title=message_title, not_level=not_level_reverse)
 
     def progressbar(self, progress, message_text="", not_level_reverse="info"):
         """Creates and updates progress bar. Only used with Pyplan UI
@@ -1182,13 +1189,16 @@ class PyplanFunctions(object):
         """
 
         if self.model and self.model.ws:
-            not_level = ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE[
-                not_level_reverse] if not_level_reverse in ws_settings.NOTIFICATION_LEVEL_CHOICES_REVERSE else ws_settings.NOTIFICATION_LEVEL_INFO
-            self.model.ws.progressbar(progress, message_text, not_level)
+            notification_levels = [
+                NotLevels.INFO, NotLevels.SUCCESS, NotLevels.WARNING, NotLevels.ERROR]
+            not_level_reverse = NotLevels(not_level_reverse) if NotLevels(
+                not_level_reverse) in notification_levels else NotLevels.INFO
+            self.model.ws.ws_notification_progress_bar(
+                progress=progress, message=message_text, not_level=not_level_reverse)
 
     def create_report(self, reportItems, reportIndexName="Report index", reportIndex=None):
         """Concatenates the reportItems dic dataArrays along the reportIndex dimension
-           
+
            reportItems: dict or list with datarrays to concat (must have the same structure)
            reportIndexName: Name of the new ReportIndex dimension
            reportIndex: Overwrite ReportIndex dimension
@@ -1213,7 +1223,7 @@ class PyplanFunctions(object):
 
     def pandas_from_dataarray(self, dataarray):
         """Create dataframe pandas from datarray with n dimensions
-           
+
            Ex.
                pp.pandas_from_dataarray(dataArrayNode)
         """
@@ -1225,10 +1235,10 @@ class PyplanFunctions(object):
         """
 
         return Pandas_from_acc()
-    
+
     def __generate_pkl_from_excel(self, workbook, filepath, targetDir, maxFileSizeMB=None, flagFilename='flag.tmp'):
         """Generates compressed pickle from excel file
-           
+
            workbook: openpyxl workbook
            filepath: full file path
            targetDir: path where pickles will be stored
@@ -1238,23 +1248,24 @@ class PyplanFunctions(object):
 
         optimizable_templates = ['.xlsx', '.xlsm', '.xlsb']
         _, ext = os.path.splitext(filepath)
-        
+
         # Generate pickle for selected file types if its size is below max limit
         if ext in optimizable_templates and (maxFileSizeMB is None or os.stat(filepath).st_size/1024/1024 <= maxFileSizeMB):
             if not os.path.isdir(targetDir):
                 os.mkdir(targetDir)
-        
+
             # When first user runs optimization, creates flag file that gets deleted after whole optimization is done
             # If another user wants to read the Excel file while the optimization is running, the flag file will be present
             flag_filepath = os.path.join(targetDir, flagFilename)
             with open(flag_filepath, 'w'):
                 pass
-            
+
             try:
                 for item in workbook.defined_names.definedName:
                     try:
                         if not item.is_external and item.type == 'RANGE' and item.attr_text and '!$' in item.attr_text:
-                            target_filepath = os.path.join(targetDir, f'{item.name}.pkl')
+                            target_filepath = os.path.join(
+                                targetDir, f'{item.name}.pkl')
                             if os.path.isfile(target_filepath):
                                 os.remove(target_filepath)
 
@@ -1272,22 +1283,27 @@ class PyplanFunctions(object):
                                         if index == 0:
                                             cols = [str(c.value) for c in row]
                                         else:
-                                            values.append([c.value for c in row])
+                                            values.append(
+                                                [c.value for c in row])
                                     nn = 0
                                     _finalCols = []
                                     for _col in cols:
                                         if _col is None:
-                                            _finalCols.append(f'Unnamed{str(nn)}')
+                                            _finalCols.append(
+                                                f'Unnamed{str(nn)}')
                                             nn += 1
                                         else:
                                             _finalCols.append(_col)
-                                    df = pd.DataFrame(values, columns=_finalCols).dropna(how='all')
-                                    df.to_pickle(target_filepath, compression='gzip')
+                                    df = pd.DataFrame(
+                                        values, columns=_finalCols).dropna(how='all')
+                                    df.to_pickle(target_filepath,
+                                                 compression='gzip')
                     except Exception as e:
-                        print(f"Could not generate pkl for range '{item.name}'. Error: {e}")
+                        print(
+                            f"Could not generate pkl for range '{item.name}'. Error: {e}")
             finally:
                 os.remove(flag_filepath)
-        
+
     def __remove_old_file(self, filepath, maxElapsedMinutes=1):
         """Deletes file if its modified date is older than current date minus maxElapsedMinutes
         """
@@ -1298,7 +1314,7 @@ class PyplanFunctions(object):
             min_modified_date = time.time() - (maxElapsedMinutes * 60)
             if modified_date < min_modified_date:
                 os.remove(filepath)
-    
+
     def __read_pickle_df(self, filepath, indexes=None):
         """Loads dataframe from pickled file
         """
@@ -1307,7 +1323,7 @@ class PyplanFunctions(object):
         if not indexes is None:
             df.set_index(indexes, inplace=True)
         return df
-    
+
     def get_nested_lists_shape(self, lst, shape=()):
         """Returns a tuple with the shape of nested lists similarly to numpy's shape.
 
@@ -1331,7 +1347,7 @@ class PyplanFunctions(object):
         shape = self.get_nested_lists_shape(lst[0], shape)
 
         return shape
-    
+
     def __concat_dataarrays_over_one_dim(self, valuesList, dim):
         """Concatenates Xarray DataArrays along a new dimension, broadcasting by all possible
         dimensions
@@ -1339,19 +1355,21 @@ class PyplanFunctions(object):
            valuesList: list of DataArrays, int, str, float. At least one of them must be DataArray
            dim: Pandas Index with same length as valuesList
         """
-        
+
         # Error handling
         if not isinstance(valuesList, list):
             raise ValueError('valuesList must be a list')
         if not any([isinstance(v, xr.DataArray) for v in valuesList]):
-            raise ValueError('At least one of the objects in valuesList must be a Xarray DataArray')
+            raise ValueError(
+                'At least one of the objects in valuesList must be a Xarray DataArray')
         if not isinstance(dim, pd.Index):
             raise ValueError('dim must be a pandas Index')
         valuesListShape = self.get_nested_lists_shape(valuesList)
         dimShape = (len(dim.values),)
         if valuesListShape != dimShape:
-            raise ValueError(f'Shape of valuesList {valuesListShape} is not equal to shape of dim {dimShape}')
-        
+            raise ValueError(
+                f'Shape of valuesList {valuesListShape} is not equal to shape of dim {dimShape}')
+
         # Get all possible dimensions
         all_dims_names, all_dims_indexes = [], {}
         for v in valuesList:
@@ -1362,7 +1380,7 @@ class PyplanFunctions(object):
                     if d not in all_dims_names:
                         all_dims_names.append(d)
                         all_dims_indexes.update({d: indexes_v[d]})
-        
+
         newValuesList = []
         for v in valuesList:
             # Add dimensions not present in original DataArray
@@ -1375,11 +1393,11 @@ class PyplanFunctions(object):
             # When value is a scalar (str, int, float, usually)
             else:
                 v = xr.DataArray(v, list(all_dims_indexes.values()))
-            
+
             newValuesList.append(v)
-                    
+
         return xr.concat(newValuesList, dim=dim)
-    
+
     def concat_dataarrays(self, valuesList, dim):
         """Concatenates Xarray DataArrays along one or two new dimensions, broadcasting
         by all possible dimensions
@@ -1407,21 +1425,24 @@ class PyplanFunctions(object):
             if len(dim) > 2:
                 raise ValueError("Can only concat along 1 or 2 dimensions")
             if len(valuesListShape) == 1:
-                raise ValueError("valuesList must be list of lists if dim is a list")
-            
+                raise ValueError(
+                    "valuesList must be list of lists if dim is a list")
+
             # Ensure shapes are the same
             if valuesListShape[0] == 1:
-                valuesListShape = (valuesListShape[1],)  # to make it comparable to dimShape
+                # to make it comparable to dimShape
+                valuesListShape = (valuesListShape[1],)
             dimShape = tuple(len(d) for d in dim)
             if not (valuesListShape == dimShape):
                 raise ValueError(
-            f"Shape of valuesList {valuesListShape} is not equal to shape of dim {dimShape}")
-            
+                    f"Shape of valuesList {valuesListShape} is not equal to shape of dim {dimShape}")
+
             if len(dimShape) == 2:
                 # Broadcast and concat along each dim
                 das = []
                 for lst in valuesList:
-                    da = self.__concat_dataarrays_over_one_dim(valuesList=lst, dim=dim[1])
+                    da = self.__concat_dataarrays_over_one_dim(
+                        valuesList=lst, dim=dim[1])
                     das.append(da)
                 return self.__concat_dataarrays_over_one_dim(valuesList=das, dim=dim[0])
             else:
