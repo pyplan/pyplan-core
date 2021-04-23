@@ -608,13 +608,15 @@ class Model(object):
             - node_classes: str or list of str
             - return_ids: bool
         """
+
+        EXCLUDED_CLASSES = ['model', 'text']
     
         if node_classes is not None and isinstance(node_classes, str):
             node_classes = [node_classes]
         
         results_dict = dict()
         for node in self.nodeDic.values():
-            if not node.system and node.nodeClass not in ['model', 'text']:
+            if not node.system and node.nodeClass not in EXCLUDED_CLASSES:
                 node_class = node.nodeClass if node.nodeClass in ['module', 'alias'] else 'others'
                 node_module_id = node.moduleId
                 if node_module_id == module_id and (node_class in node_classes if node_classes is not None else True):
@@ -651,7 +653,7 @@ class Model(object):
         
         return nodes_set
     
-    def get_node_inputs_outputs(self, node, add_aliases=False, aliases=None, add_inputs=True, add_outputs=True):
+    def get_node_inputs_outputs_ids(self, node, add_aliases=False, aliases=None, add_inputs=True, add_outputs=True):
         """
         Returns a tuple containing a list of inputs and a list of outputs of a given BaseNode object
 
@@ -663,139 +665,142 @@ class Model(object):
             - add_outputs: bool
         """
         
-        node_inputs = []
-        node_outputs = []
+        node_inputs_ids = []
+        node_outputs_ids = []
         if node.nodeClass == 'alias':
-            original_id = node.originalId
-            if original_id in self.nodeDic:
+            node_original_id = node.originalId
+            if node_original_id in self.nodeDic:
                 if add_inputs:
-                    node_inputs = self.nodeDic[original_id].inputs
+                    node_inputs_ids = self.nodeDic[node_original_id].inputs
                 if add_outputs:
-                    node_outputs = self.nodeDic[original_id].outputs
+                    node_outputs_ids = self.nodeDic[node_original_id].outputs
         else:
             if add_inputs:
-                node_inputs = node.inputs
+                node_inputs_ids = node.inputs
             if add_outputs:
-                node_outputs = node.outputs
+                node_outputs_ids = node.outputs
         
-        inputs = set(node_inputs)
-        outputs = set(node_outputs)
+        inputs_ids = set(node_inputs_ids)
+        outputs_ids = set(node_outputs_ids)
         
         # Add every alias from the original node as an input or output
         if add_aliases and aliases is not None:
             if add_inputs:
-                for inp in node_inputs:
-                    if inp in aliases:
-                        inputs.update(aliases[inp])
+                for input_id in node_inputs_ids:
+                    if input_id in aliases:
+                        inputs_ids.update(aliases[input_id])
             
             if add_outputs:
-                for out in node_outputs:
-                    if out in aliases:
-                        outputs.update(aliases[out])
+                for output_id in node_outputs_ids:
+                    if output_id in aliases:
+                        outputs_ids.update(aliases[output_id])
         
-        return inputs, outputs
+        return inputs_ids, outputs_ids
 
     def get_arrows(self, module_id):
         """
-        Return all arrows inside module_id
+        Returns a list of dicts of all arrows inside module_id.
         
         Parameters:
             - module_id: str
+        
+        Example output: [{`from`: `node_id_1`, `to`: `node_id_2`}, {`from`: `node_id_1`, `to`: `node_id_3`}]
         """
         
         nodes = self.get_dict_of_nodes_in_module(module_id) 
         aliases = nodes.get('alias', [])
         nodes_in_module = nodes.get('others', []) + aliases
         nodes_ids_in_module = set([nd.identifier for nd in nodes_in_module])
-        modules_in_module = [module for module in nodes.get('module', []) if module.nodeInfo.showInputs or module.nodeInfo.showOutputs]
+        submodules_in_module = [module for module in nodes.get('module', []) if module.nodeInfo.showInputs or module.nodeInfo.showOutputs]
 
         aliases_dict = dict()
         for alias in aliases:
             alias_id = alias.identifier
-            original_id = self.nodeDic[alias_id].originalId
-            aliases_dict.setdefault(original_id, []).append(alias_id)
+            node_original_id = self.nodeDic[alias_id].originalId
+            aliases_dict.setdefault(node_original_id, []).append(alias_id)
 
         # Get every node and inputs inside all submodules recursively
-        all_nodes_inputs_by_module = dict()
-        for module in modules_in_module:
-            module_id = module.identifier
-            all_nodes_inputs_by_module[module_id] = dict()
-            inputs = set()
-            all_nodes_inputs_by_module[module_id]['nodes'] = self.get_all_nodes_in_module(module_id, return_ids=True)
-            for node in all_nodes_inputs_by_module[module_id]['nodes']:
-                node_inputs, _ = self.get_node_inputs_outputs(
+        all_nodes_and_inputs_ids_by_module = dict()
+        for submodule in submodules_in_module:
+            submodule_id = submodule.identifier
+            all_nodes_and_inputs_ids_by_module[submodule_id] = dict()
+            all_nodes_and_inputs_ids_by_module[submodule_id]['nodes'] = self.get_all_nodes_in_module(submodule_id, return_ids=True)
+            inputs_ids = set()
+            for node in all_nodes_and_inputs_ids_by_module[submodule_id]['nodes']:
+                node_inputs_ids, _ = self.get_node_inputs_outputs_ids(
                     self.getNode(node),
                     add_aliases=True,
                     aliases=aliases_dict,
                     add_inputs=True,
-                    add_outputs=False)
-                inputs.update(node_inputs)
-            all_nodes_inputs_by_module[module_id]['inputs'] = inputs
+                    add_outputs=False)  # outputs not needed since if A is input of B, B is output of A
+                inputs_ids.update(node_inputs_ids)
+            all_nodes_and_inputs_ids_by_module[submodule_id]['inputs'] = inputs_ids
 
         arrows_set = set()
         for node in nodes_in_module:
             if node.nodeInfo.showInputs or node.nodeInfo.showOutputs:
                 node_id = node.identifier
                 # Get node inputs and outputs
-                inputs, outputs = self.get_node_inputs_outputs(
+                inputs_ids, outputs_ids = self.get_node_inputs_outputs_ids(
                     node, 
                     add_aliases=True, 
                     aliases=aliases_dict,
                     add_inputs=True,
                     add_outputs=True)
                 
-                # NODES TO NODES
+                # NODE TO NODE
                 if node.nodeInfo.showInputs:
-                    for input_ in inputs:
-                        if input_ in nodes_ids_in_module and self.nodeDic[input_].nodeInfo.showOutputs:
-                            arrows_set.add((input_, node_id))
+                    for input_id in inputs_ids:
+                        if input_id in nodes_ids_in_module and self.nodeDic[input_id].nodeInfo.showOutputs:
+                            arrows_set.add((input_id, node_id))
                 if node.nodeInfo.showOutputs:
-                    for output in outputs:
-                        if output in nodes_ids_in_module and self.nodeDic[output].nodeInfo.showInputs:
-                            arrows_set.add((node_id, output))
+                    for output_id in outputs_ids:
+                        if output_id in nodes_ids_in_module and self.nodeDic[output_id].nodeInfo.showInputs:
+                            arrows_set.add((node_id, output_id))
                 
-                # MODULES TO NODES
-                for module_inside in modules_in_module:
-                    module_inside_id = module_inside.identifier
-                    nodes_in_child_module = all_nodes_inputs_by_module[module_inside_id]['nodes']
+                # MODULE TO NODE
+                for submodule in submodules_in_module:
+                    submodule_id = submodule.identifier
+                    nodes_ids_in_submodule = all_nodes_and_inputs_ids_by_module[submodule_id]['nodes']
                     
-                    if node.nodeInfo.showInputs and module_inside.nodeInfo.showOutputs:
-                        for input_ in inputs:
-                            if input_ in nodes_in_child_module:
-                                arrows_set.add((module_inside_id, node_id))
+                    if node.nodeInfo.showInputs and submodule.nodeInfo.showOutputs:
+                        for input_id in inputs_ids:
+                            if input_id in nodes_ids_in_submodule:
+                                arrows_set.add((submodule_id, node_id))
                                 break
-                    if node.nodeInfo.showOutputs and module_inside.nodeInfo.showInputs:
-                        for output in outputs:
-                            if output in nodes_in_child_module:
-                                arrows_set.add((node_id, module_inside_id))
+                    if node.nodeInfo.showOutputs and submodule.nodeInfo.showInputs:
+                        for input_id in outputs_ids:
+                            if input_id in nodes_ids_in_submodule:
+                                arrows_set.add((node_id, submodule_id))
                                 break
 
         # MODULE TO MODULE
-        for combination in combinations(all_nodes_inputs_by_module.keys(), 2):
+        for combination in combinations(all_nodes_and_inputs_ids_by_module, 2):
             # Every combination is a pair of (module_1, module_2)
-            first = combination[0]
-            first_node = self.getNode(first)
-            second = combination[1]
-            second_node = self.getNode(second)
-            first_nodes = all_nodes_inputs_by_module[first]['nodes']
-            second_nodes = all_nodes_inputs_by_module[second]['nodes']
-            first_inputs = all_nodes_inputs_by_module[first]['inputs']
-            second_inputs = all_nodes_inputs_by_module[second]['inputs']
+            first_module_id = combination[0]
+            first_module = self.getNode(first_module_id)
+            second_module_id = combination[1]
+            second_module = self.getNode(second_module_id)
+            first_module_nodes_ids = all_nodes_and_inputs_ids_by_module[first_module_id]['nodes']
+            second_module_nodes_ids = all_nodes_and_inputs_ids_by_module[second_module_id]['nodes']
+            first_module_inputs_ids = all_nodes_and_inputs_ids_by_module[first_module_id]['inputs']
+            second_module_inputs_ids = all_nodes_and_inputs_ids_by_module[second_module_id]['inputs']
             
-            if first_node.nodeInfo.showOutputs and second_node.nodeInfo.showInputs:
-                for node in first_nodes:
-                    if node in second_inputs:
-                        arrows_set.add((first, second))
+            if first_module.nodeInfo.showOutputs and second_module.nodeInfo.showInputs:
+                for node_id in first_module_nodes_ids:
+                    if node_id in second_module_inputs_ids:
+                        arrows_set.add((first_module_id, second_module_id))
                         break
-            if first_node.nodeInfo.showInputs and second_node.nodeInfo.showOutputs:
-                for node in second_nodes:
-                    if node in first_inputs:
-                        arrows_set.add((second, first))
+            if first_module.nodeInfo.showInputs and second_module.nodeInfo.showOutputs:
+                for node_id in second_module_nodes_ids:
+                    if node_id in first_module_inputs_ids:
+                        arrows_set.add((second_module_id, first_module_id))
                         break
         
-        arrows_dict = [{'from': arrow[0], 'to': arrow[1]} for arrow in arrows_set]
+        # Adapt output
+        arrows_list = [{'from': arrow[0], 'to': arrow[1]} for arrow in arrows_set]
 
-        return arrows_dict
+        return arrows_list
 
     def existArrow(self, aFrom, aTo, arrowsList):
         """Return true if exists de arrow from-to"""
@@ -866,86 +871,6 @@ class Model(object):
                     self.getNodesInModule(module.identifier, nodesInSubLevels)
 
         return nodesInSubLevels
-
-    # UNUSED FULL ARROWS (NODE TO NODE WITH ALIASES)
-    """
-    def getArrows(self,moduleId):
-        res=[]
-        thisLevel = self.findNodes("moduleId",moduleId)
-        thisIds = [node.identifier for node in thisLevel]
-        for nodeId in self.nodeDic:
-            if self.getNode(nodeId).nodeClass not in ["module","text"]:
-                nodeInputs = []
-                nodeOutputs = []
-                fullNode = []
-                fullInputs = []
-                fullOutputs = []
-                # To clear non existent aliases
-                if self.getNode(nodeId).originalId:
-                    if self.getNode(nodeId).originalId not in self.nodeDic:
-                        continue
-                nodeInputs = self.getNode(nodeId).inputs
-                nodeOutputs = self.getNode(nodeId).outputs
-                fullNode = self.getNodeParentsAndAliases(nodeId)
-                if fullNode:
-                    for n in fullNode:
-                        if n not in thisIds:
-                            fullNode.remove(n)
-                if fullNode:
-                    if nodeInputs:
-                        for i in nodeInputs:
-                            fullInputs = self.getNodeParentsAndAliases(i)
-                            if fullInputs:
-                                for n in fullInputs:
-                                    if n not in thisIds:
-                                        fullInputs.remove(n)
-                            if fullInputs:
-                                for n in fullNode:
-                                    for inp in fullInputs:
-                                        if self.getNode(n).nodeInfo.showInputs and self.getNode(inp).nodeInfo.showOutputs:
-                                            element = {"from":inp,"to":n}
-                                            if element not in res:
-                                                res.append(element)
-
-                    if nodeOutputs:
-                        for o in nodeOutputs:
-                            fullOutputs = self.getNodeParentsAndAliases(o)
-                            if fullOutputs:
-                                for n in fullOutputs:
-                                    if n not in fullOutputs:
-                                        fullOutputs.remove(n)
-                            if fullOutputs:
-                                for n in fullNode:
-                                    for out in fullOutputs:
-                                        if self.getNode(out).nodeInfo.showInputs and self.getNode(n).nodeInfo.showOutputs:
-                                            element = {"from":n,"to":out}
-                                            if element not in res:
-                                                res.append(element)
-
-        return res
-
-
-    def getNodeParentsAndAliases(self,nodeId):
-        response = []
-        aliases = []
-        parentModulesAndAliases = []
-        if nodeId not in response:
-            response.append(nodeId)
-        aliases = self.findNodes('originalId',nodeId)
-        if aliases:
-            for a in aliases:
-                if a.identifier not in response:
-                    response.append(a.identifier)
-        if self.getNode(nodeId).isin in self.nodeDic:
-            parentModulesAndAliases = self.getParentModulesWithAlias(
-                self.getNode(nodeId).isin,[])
-        if parentModulesAndAliases:
-            for m in parentModulesAndAliases:
-                if m not in response:
-                    response.append(m)
-        return response
-
-    """
 
     def findNodes(self, prop, value):
         """Finds nodes by property/value"""
