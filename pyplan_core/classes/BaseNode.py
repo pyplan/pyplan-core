@@ -790,7 +790,7 @@ class BaseNode(object):
         if nodeClass == "text":
             return NodeInfo(0, 0, 1, 0, 0, 0)
         if nodeClass == "alias":
-            return NodeInfo(0, 0, 1, 1, 1, 0)
+            return NodeInfo(1, 1, 1, 1, 1, 0)
         elif nodeClass == "index":
             return NodeInfo(0, 0, 1, 1, 1, 0)
         elif nodeClass == "function":
