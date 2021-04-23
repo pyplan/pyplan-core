@@ -21,7 +21,6 @@ class ArrowsManager(object):
             - node_classes: str or list of str
             - return_ids: bool
         """
-
     
         if node_classes is not None and isinstance(node_classes, str):
             node_classes = [node_classes]
