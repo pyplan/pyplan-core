@@ -5,9 +5,8 @@ class ArrowsManager(object):
 
     EXCLUDED_CLASSES = ['model', 'text']
 
-    def __init__(self, model, module_id):
+    def __init__(self, model):
         self.model = model
-        self.module_id = module_id
 
     def get_dict_of_nodes_in_module(self, module_id, node_classes=None, return_ids=False):
         """
@@ -108,7 +107,7 @@ class ArrowsManager(object):
         
         return inputs_ids, outputs_ids
 
-    def get_arrows(self):
+    def get_arrows(self, module_id):
         """
         Returns a list of dicts of all arrows inside module_id.
         
@@ -119,8 +118,8 @@ class ArrowsManager(object):
         """
         
         arrows_list = []
-        if self.module_id in self.model.nodeDic:
-            nodes = self.get_dict_of_nodes_in_module(self.module_id) 
+        if module_id in self.model.nodeDic:
+            nodes = self.get_dict_of_nodes_in_module(module_id)
             aliases = nodes.get('alias', [])
             nodes_in_module = nodes.get('others', []) + aliases
             nodes_ids_in_module = set([nd.identifier for nd in nodes_in_module])

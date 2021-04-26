@@ -601,9 +601,9 @@ class Model(object):
         Returns a list of dicts of all arrows inside module_id
         """
         
-        arrows_manager = ArrowsManager(model=self, module_id=module_id)
+        arrows_manager = ArrowsManager(model=self)
 
-        return arrows_manager.get_arrows()
+        return arrows_manager.get_arrows(module_id=module_id)
 
     def findNodes(self, prop, value):
         """Finds nodes by property/value"""
