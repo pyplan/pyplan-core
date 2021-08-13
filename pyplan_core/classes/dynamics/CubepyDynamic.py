@@ -25,23 +25,36 @@ class CubepyDynamic(BaseDynamic):
 
         # create nodes array
         cyclicNodes = []
-
+        nodesWoDynamicIndex = []
         try:
             node.model.inCyclicEvaluate = True
             for nodeId in nodesInCyclic:
                 _nodeObj = node.model.getNode(nodeId)
+                _nodeResult = _nodeObj.bypassCircularEvaluator().result
                 cyclicNodes.append({
                     "node": _nodeObj,
-                    "initialize": self.generateInitDef(node, _nodeObj.bypassCircularEvaluator().result, dynamicIndex),
+                    "initialize": self.generateInitDef(node, _nodeResult, dynamicIndex),
                     "loopDefinition": self.generateLoopDef(node, _nodeObj.definition, nodesInCyclic)
                 })
+                if isinstance(_nodeResult, cubepy.Cube) and dynamicIndex.name not in _nodeResult.dims:
+                   nodesWoDynamicIndex.append(_nodeObj.identifier)
         except Exception as e:
             raise e
         finally:
             node.model.inCyclicEvaluate = False
+        
+        if nodesWoDynamicIndex:
+            nodesWoDynamicIndexStr = ', '.join(nodesWoDynamicIndex)
+            message = f"WARNING: the following nodes do not have '{dynamicIndex.name}' as a dimension: {nodesWoDynamicIndexStr}"
+            consoleMessage = message
+            # Set in node console
+            nodeLastEvaluationConsole = node.lastEvaluationConsole
+            if isinstance(nodeLastEvaluationConsole, str):
+                # Concat warning with previous console message
+                consoleMessage = f'{consoleMessage}\n{nodeLastEvaluationConsole}'
+            node.lastEvaluationConsole = consoleMessage
 
         cyclicDic = {}
-
         # initialice var dictionary
         for _node in cyclicNodes:
             _id = _node["node"].identifier
@@ -85,11 +98,14 @@ class CubepyDynamic(BaseDynamic):
 
                 # execute vars
                 if (_id in initialValues) and ((nn < initialCount and (not reverseMode)) or (nn > initialCount and reverseMode)):
-                    # use initial values
-                    __resultNode = evaluate(
-                        _node["loopDefinition"], cyclicParams)
+                    try:
+                        # use initial values
+                        __resultNode = evaluate(
+                            _node["loopDefinition"], cyclicParams)
+                        __initialValues = evaluate(initialValues[_id])
+                    except Exception as ex:
+                        raise ValueError(f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
 
-                    __initialValues = evaluate(initialValues[_id])
                     if isinstance(__initialValues, cubepy.Cube):
                         __finalNode = __initialValues.tryFilter(
                             item).squeeze() + __resultNode.tryFilter(item).squeeze()
@@ -99,9 +115,12 @@ class CubepyDynamic(BaseDynamic):
 
                     cyclicDic[_id].set_data(item, __finalNode.values)
                 else:
-                    # dont use use initial values
-                    __resultNode = evaluate(
-                        _node["loopDefinition"], cyclicParams)
+                    try:
+                        # dont use use initial values
+                        __resultNode = evaluate(
+                            _node["loopDefinition"], cyclicParams)
+                    except Exception as ex:
+                        raise ValueError(f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
                     cyclicDic[_id].set_data(
                         item, __resultNode.tryFilter(item).squeeze().values)
 

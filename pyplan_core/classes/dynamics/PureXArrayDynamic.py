@@ -29,14 +29,15 @@ class PureXArrayDynamic(BaseDynamic):
 
         # create nodes array
         cyclicNodes = []
-
+        nodesWoDynamicIndex = []
         try:
             node.model.inCyclicEvaluate = True
             for nodeId in nodesInCyclic:
                 _nodeObj = node.model.getNode(nodeId)
+                _nodeResult = _nodeObj.bypassCircularEvaluator().result
                 cyclic_item = {
                     "node": _nodeObj,
-                    "initialize": self.generateInitDef(node, _nodeObj.bypassCircularEvaluator().result, dynamicIndex),
+                    "initialize": self.generateInitDef(node, _nodeResult, dynamicIndex),
                     "calcTime": _nodeObj.lastEvaluationTime
                 }
                 startTime = dt.datetime.now()
@@ -47,13 +48,25 @@ class PureXArrayDynamic(BaseDynamic):
                                             startTime).total_seconds()
 
                 cyclicNodes.append(cyclic_item)
+                if isinstance(_nodeResult, xr.DataArray) and dynamicIndex.name not in _nodeResult.dims:
+                   nodesWoDynamicIndex.append(_nodeObj.identifier)
         except Exception as e:
             raise e
         finally:
             node.model.inCyclicEvaluate = False
 
+        if nodesWoDynamicIndex:
+            nodesWoDynamicIndexStr = ', '.join(nodesWoDynamicIndex)
+            message = f"WARNING: the following nodes do not have '{dynamicIndex.name}' as a dimension: {nodesWoDynamicIndexStr}"
+            consoleMessage = message
+            # Set in node console
+            nodeLastEvaluationConsole = node.lastEvaluationConsole
+            if isinstance(nodeLastEvaluationConsole, str):
+                # Concat warning with previous console message
+                consoleMessage = f'{consoleMessage}\n{nodeLastEvaluationConsole}'
+            node.lastEvaluationConsole = consoleMessage
+        
         cyclicDic = {}
-
         # initialice var dictionary
         for _node in cyclicNodes:
             _id = _node["node"].identifier
@@ -108,7 +121,6 @@ class PureXArrayDynamic(BaseDynamic):
                 "self": self
             }
 
-            __initialValues = None
             # loop over variables
             for _node in cyclicNodes:
 
@@ -123,11 +135,14 @@ class PureXArrayDynamic(BaseDynamic):
 
                 # execute vars
                 if (_id in initialValues) and ((nn < initialCount and (not reverseMode)) or (nn > initialCount and reverseMode)):
-                    # use initial values
-                    _resultNode, evaluate_node_time = evaluate(
-                        _node["loopDefinition"], cyclicParams, True)
-                    _initialValues, evaluate_initial_params_time = evaluate(
-                        initialValues[_id], returnEvaluateTime=True)
+                    try:
+                        # use initial values
+                        _resultNode, evaluate_node_time = evaluate(
+                            _node["loopDefinition"], cyclicParams, True)
+                        _initialValues, evaluate_initial_params_time = evaluate(
+                            initialValues[_id], returnEvaluateTime=True)
+                    except Exception as ex:
+                        raise ValueError(f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
                     _finalNode = None
                     start_extra_process_time = dt.datetime.now()
                     if isinstance(_initialValues, xr.DataArray):
@@ -147,9 +162,12 @@ class PureXArrayDynamic(BaseDynamic):
                             item, item)}] = _finalNode.transpose(*list_dims, transpose_coords=True).values
 
                 else:
-                    # dont use use initial values
-                    _resultNode, evaluate_node_time = evaluate(
-                        _node["loopDefinition"], cyclicParams, True)
+                    try:
+                        # dont use use initial values
+                        _resultNode, evaluate_node_time = evaluate(
+                            _node["loopDefinition"], cyclicParams, True)
+                    except Exception as ex:
+                        raise ValueError(f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
                     _finalNode = self._tryFilter(
                         _resultNode, dynamicIndex, item)
 
