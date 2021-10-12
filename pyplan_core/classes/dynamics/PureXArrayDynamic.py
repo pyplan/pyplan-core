@@ -126,9 +126,9 @@ class PureXArrayDynamic(BaseDynamic):
             loc_dic = {dynamicIndex.name: slice(item, item)}
 
             #overwrite external inputs result
-            # for external_input_id, external_input in external_inputs.items():
-            #     input_witout_time = external_input.loc[loc_dic].squeeze(drop=True)
-            #     node.model.getNode(external_input_id)._result = input_witout_time
+            for external_input_id, external_input in external_inputs.items():
+                input_witout_time = external_input.loc[loc_dic].squeeze(drop=True)
+                node.model.getNode(external_input_id)._result = input_witout_time
 
             # load params
             cyclicParams = {
