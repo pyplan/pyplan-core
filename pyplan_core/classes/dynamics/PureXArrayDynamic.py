@@ -1,3 +1,4 @@
+from xarray.core import dataarray
 from pyplan_core.classes.dynamics.BaseDynamic import BaseDynamic
 from pyplan_core.cubepy.Helpers import Helpers
 import numpy as np
@@ -9,9 +10,7 @@ import datetime as dt
 class PureXArrayDynamic(BaseDynamic):
 
     def circularEval(self, node, params):
-        """
-        Used for execute nodes with circular reference (pp.dynamic)
-        """
+        """Used for execute nodes with circular reference (pp.dynamic)"""
 
         dynamicVars = params["dynamicVars"]
         dynamicIndex = params["dynamicIndex"]
@@ -30,11 +29,14 @@ class PureXArrayDynamic(BaseDynamic):
         # create nodes array
         cyclicNodes = []
         nodesWoDynamicIndex = []
+        external_inputs = dict()
+
         try:
             node.model.inCyclicEvaluate = True
             for nodeId in nodesInCyclic:
                 _nodeObj = node.model.getNode(nodeId)
                 _nodeResult = _nodeObj.bypassCircularEvaluator().result
+
                 cyclic_item = {
                     "node": _nodeObj,
                     "initialize": self.generateInitDef(node, _nodeResult, dynamicIndex),
@@ -49,7 +51,16 @@ class PureXArrayDynamic(BaseDynamic):
 
                 cyclicNodes.append(cyclic_item)
                 if isinstance(_nodeResult, xr.DataArray) and dynamicIndex.name not in _nodeResult.dims:
-                   nodesWoDynamicIndex.append(_nodeObj.identifier)
+                    nodesWoDynamicIndex.append(_nodeObj.identifier)
+
+                # Get external inputs
+                _external_inputs_ids = set(_nodeObj.inputs) - set(nodesInCyclic) 
+                for node_id in _external_inputs_ids:
+                    if node_id not in external_inputs and node.model.existNode(node_id):
+                        input_result = node.model.getNode(node_id).result
+                        if isinstance(input_result, xr.DataArray) and dynamicIndex.name in input_result.dims:
+                            external_inputs[node_id] = input_result
+                
         except Exception as e:
             raise e
         finally:
@@ -65,7 +76,7 @@ class PureXArrayDynamic(BaseDynamic):
                 # Concat warning with previous console message
                 consoleMessage = f'{consoleMessage}\n{nodeLastEvaluationConsole}'
             node.lastEvaluationConsole = consoleMessage
-        
+
         cyclicDic = {}
         # initialice var dictionary
         for _node in cyclicNodes:
@@ -112,6 +123,12 @@ class PureXArrayDynamic(BaseDynamic):
 
         for nn in theRange:
             item = dynamicIndex.values[nn]
+            loc_dic = {dynamicIndex.name: slice(item, item)}
+
+            #overwrite external inputs result
+            # for external_input_id, external_input in external_inputs.items():
+            #     input_witout_time = external_input.loc[loc_dic].squeeze(drop=True)
+            #     node.model.getNode(external_input_id)._result = input_witout_time
 
             # load params
             cyclicParams = {
@@ -123,10 +140,8 @@ class PureXArrayDynamic(BaseDynamic):
 
             # loop over variables
             for _node in cyclicNodes:
-
                 _id = _node["node"].identifier
                 node.model.currentProcessingNode(_id)
-                cyclicParams["cyclicDic"] = cyclicDic
 
                 evaluate_node_time = 0
                 evaluate_initial_params_time = 0
@@ -142,9 +157,11 @@ class PureXArrayDynamic(BaseDynamic):
                         _initialValues, evaluate_initial_params_time = evaluate(
                             initialValues[_id], returnEvaluateTime=True)
                     except Exception as ex:
-                        raise ValueError(f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
+                        raise ValueError(
+                            f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
                     _finalNode = None
                     start_extra_process_time = dt.datetime.now()
+
                     if isinstance(_initialValues, xr.DataArray):
                         _finalNode = self._tryFilter(
                             _resultNode, dynamicIndex, item) + self._tryFilter(_initialValues, dynamicIndex, item)
@@ -153,33 +170,33 @@ class PureXArrayDynamic(BaseDynamic):
                             _resultNode, dynamicIndex, item) + _initialValues
 
                     try:
-                        cyclicDic[_id].loc[{dynamicIndex.name: slice(
-                            item, item)}] = _finalNode.values
+                        cyclicDic[_id].loc[loc_dic] = _finalNode.values
                     except Exception as ex:
                         list_dims = list(cyclicDic[_id].dims)
                         list_dims.remove(dynamicIndex.name)
-                        cyclicDic[_id].loc[{dynamicIndex.name: slice(
-                            item, item)}] = _finalNode.transpose(*list_dims, transpose_coords=True).values
+                        cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
+                            *list_dims, transpose_coords=True).values
 
                 else:
+
                     try:
                         # dont use use initial values
                         _resultNode, evaluate_node_time = evaluate(
                             _node["loopDefinition"], cyclicParams, True)
                     except Exception as ex:
-                        raise ValueError(f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
+                        raise ValueError(
+                            f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
                     _finalNode = self._tryFilter(
                         _resultNode, dynamicIndex, item)
 
                     start_extra_process_time = dt.datetime.now()
                     try:
-                        cyclicDic[_id].loc[{
-                            dynamicIndex.name: slice(item, item)}] = _finalNode.values
+                        cyclicDic[_id].loc[loc_dic] = _finalNode.values
                     except Exception as ex:
                         list_dims = list(cyclicDic[_id].dims)
                         list_dims.remove(dynamicIndex.name)
-                        cyclicDic[_id].loc[{dynamicIndex.name: slice(
-                            item, item)}] = _finalNode.transpose(*list_dims, transpose_coords=True).values
+                        cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
+                            *list_dims, transpose_coords=True).values
 
                 _node["calcTime"] += evaluate_node_time + \
                     evaluate_initial_params_time
@@ -216,6 +233,9 @@ class PureXArrayDynamic(BaseDynamic):
                 if not circular_node is None:
                     circular_node.sendEndCalcNode(fromDynamic=True)
 
+        for external_input_id, external_input in external_inputs.items():
+                node.model.getNode(external_input_id)._result = external_input
+
         evaluate = None
         model = None
         cyclicDic = None
@@ -224,9 +244,7 @@ class PureXArrayDynamic(BaseDynamic):
         return "ok"
 
     def generateLoopDef(self, node, nodeDefinition, cyclicVariables):
-        """
-        Return definition used for circular evaluator
-        """
+        """Return definition used for circular evaluator"""
         _def = self.clearCircularDependency(
             nodeDefinition, "cyclicDic['__##node##_t']")
         finalDef = _def
@@ -255,37 +273,19 @@ class PureXArrayDynamic(BaseDynamic):
         return finalDef
 
     def generateInitDef(self, node, nodeCube, dynamicIndex):
-        """
-        Return definition used for initialice vars in circular evaluator
-        """
+        """Return definition used for initialice vars in circular evaluator"""
         if isinstance(nodeCube, xr.DataArray):
             _list = list(nodeCube.dims[:])
             if not dynamicIndex.name in _list:
                 _list.append(dynamicIndex.name)
             _dims = ','.join(_list)
             _def = f"result = pp.create_dataarray(0.,[{_dims}])"
-
-            """
-            _data = np.full(nodeCube.shape, 0. )
-            np.set_printoptions(threshold = np.prod(_data.shape))
-            _data = np.array2string(_data, separator=",", precision=20 , formatter={'float_kind':lambda x: repr(x)}).replace('\n','')
-
-            _def = f"result = xr.DataArray({_data},{_dims})"
-            """
             return _def
         else:
             return f"result = pp.create_dataarray(0.,[{dynamicIndex.name}])"
-            """
-            _data = np.full(dynamicIndex.shape, 0. )
-            np.set_printoptions(threshold = np.prod(_data.shape))
-            _data = np.array2string(_data, separator=",", precision=20 , formatter={'float_kind':lambda x: repr(x)}).replace('\n','')
-            return f"result = xr.DataArray({_data}, [{dynamicIndex.name}])"
-            """
 
     def generateCircularParameters(self, node, nodeList):
-        """
-        Generate paremters for call to circularEval
-        """
+        """Generate paremters for call to circularEval"""
         dynamicVars = []
         dynamicIndex = None
         nodesInCyclic = []  # nodeList TODO: Determinar orden de nodos
@@ -298,7 +298,8 @@ class PureXArrayDynamic(BaseDynamic):
                 _def = node.model.getNode(_nodeId).definition
                 if "dynamic(" in _def:
 
-                    _startPos = (_def.find("pp.dynamic(") + 11) if "pp.dynamic" in _def else (_def.find("dynamic(") + 8 )
+                    _startPos = (_def.find(
+                        "pp.dynamic(") + 11) if "pp.dynamic" in _def else (_def.find("dynamic(") + 8)
                     _endPos = _def.find(")", _startPos)
 
                     # dynamicVars = _def[_startPos:_endPos] # cc,time,-1
@@ -337,8 +338,7 @@ class PureXArrayDynamic(BaseDynamic):
         }
 
     def clearCircularDependency(self, stringDef, replaceWith="0"):
-        """ Replaces pp.dynamic(x,y,z) for the desired replaceWith param
-        """
+        """ Replaces pp.dynamic(x,y,z) for the desired replaceWith param"""
         response = stringDef
         initialIndex = -1
         startIndex = -1
