@@ -1,5 +1,4 @@
 import os
-import sys
 from time import time
 
 from pyplan_core.pyplan import Pyplan
@@ -54,14 +53,11 @@ def main():
 
     print(f'Open model: {round(t_model_ok-t_start,4)}')
     try:
-
-        #value = pyplan.getResult("check_sum_all")#.item(0)
         value = pyplan.getResult(run_test['node'])
-        
         print(value)
         
         if run_test['value']>0 and int(value) != run_test['value']:
-            print(f"\033[91m###### VALUE ERROR ###### ----->   {int(value)} != {base} \033[0m" )
+            print(f"\033[91m###### VALUE ERROR ###### ----->   {int(value)} != {run_test['value']} \033[0m" )
 
     except Exception as ex:
         t_end = time()
@@ -74,8 +70,6 @@ def main():
     print(f'\nTotal time: {round(t_end-t_start,4)}\n\n')
 
     pyplan.closeModel()
-    sys.stdout.flush()
-
 
 
 if __name__ == '__main__':
