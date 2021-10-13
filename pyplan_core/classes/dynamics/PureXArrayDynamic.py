@@ -78,28 +78,41 @@ class PureXArrayDynamic(BaseDynamic):
             node.lastEvaluationConsole = consoleMessage
 
         cyclicDic = {}
+        result_dic = {}
         # initialice var dictionary
         for _node in cyclicNodes:
             _id = _node["node"].identifier
 
+            result_dic[_id] = []
+            
             evaluate_node_time = 0
             evaluate_initial_params_time = 0
 
             cyclicDic[_id], evaluate_node_time = evaluate(
                 _node["initialize"], returnEvaluateTime=True)
 
+            # initialice in t-1
+            cyclicDic[_id] = cyclicDic[_id].sum(dynamicIndex.name) * 0
+
             if not initialValues is None and _id in initialValues:
                 initial_result, evaluate_initial_params_time = evaluate(
                     initialValues[_id], returnEvaluateTime=True)
                 cyclicDic[_id] = cyclicDic[_id] + initial_result
+
+            #TODO: ver initial result
+            if dynamicIndex.name in cyclicDic[_id].dims:
+                cyclicDic[_id] = cyclicDic[_id].sum(dynamicIndex.name)
+
+
+            
             # check align
-            if cyclicDic[_id].dims[0] != dynamicIndex.name:
-                # move dynamic index to top
-                list_dims = list(cyclicDic[_id].dims)
-                list_dims.remove(dynamicIndex.name)
-                new_tuple = (dynamicIndex.name,) + tuple(list_dims)
-                cyclicDic[_id] = cyclicDic[_id].transpose(
-                    *new_tuple, transpose_coords=True)
+            # if cyclicDic[_id].dims[0] != dynamicIndex.name:
+            #     # move dynamic index to top
+            #     list_dims = list(cyclicDic[_id].dims)
+            #     list_dims.remove(dynamicIndex.name)
+            #     new_tuple = (dynamicIndex.name,) + tuple(list_dims)
+            #     cyclicDic[_id] = cyclicDic[_id].transpose(
+            #         *new_tuple, transpose_coords=True)
 
             _node["calcTime"] = _node["calcTime"] + \
                 evaluate_node_time + evaluate_initial_params_time
@@ -107,7 +120,8 @@ class PureXArrayDynamic(BaseDynamic):
         # initialice vars in t-1
         for _var in dynamicVars:
             _key = "__" + _var + "_t"
-            cyclicDic[_key] = cyclicDic[_var].sum(dynamicIndex.name) * 0
+            cyclicDic[_key] = cyclicDic[_var]
+            #cyclicDic[_key] = cyclicDic[_var].sum(dynamicIndex.name) * 0
 
         # loop over index
         cyclicParams = None
@@ -126,6 +140,7 @@ class PureXArrayDynamic(BaseDynamic):
         # print(f"Rage: {theRange}")
 
 
+        
         for nn in theRange:
             item = dynamicIndex.values[nn]
             loc_dic = {dynamicIndex.name: slice(item, item)}
@@ -159,6 +174,7 @@ class PureXArrayDynamic(BaseDynamic):
                 evaluate_initial_params_time = 0
 
                 start_extra_process_time = None
+                _finalNode = None
 
                 # execute vars
                 if (_id in initialValues) and ((nn < initialCount and (not reverseMode)) or (nn > initialCount and reverseMode)):
@@ -171,7 +187,7 @@ class PureXArrayDynamic(BaseDynamic):
                     except Exception as ex:
                         raise ValueError(
                             f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
-                    _finalNode = None
+
                     start_extra_process_time = dt.datetime.now()
 
                     if isinstance(_initialValues, xr.DataArray):
@@ -181,16 +197,19 @@ class PureXArrayDynamic(BaseDynamic):
                         _finalNode = self._tryFilter(
                             _resultNode, dynamicIndex, item) + _initialValues
 
-                    try:
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.values
-                    except Exception as ex:
-                        list_dims = list(cyclicDic[_id].dims)
-                        list_dims.remove(dynamicIndex.name)
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
-                            *list_dims, transpose_coords=True).values
+                    cyclicDic[_id] = _finalNode
+
+                    # try:
+                    #     cyclicDic[_id].loc[loc_dic] = _finalNode.values
+                    # except Exception as ex:
+                    #     list_dims = list(cyclicDic[_id].dims)
+                    #     list_dims.remove(dynamicIndex.name)
+                    #     cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
+                    #         *list_dims, transpose_coords=True).values
 
                 else:
 
+                    _resultNode = None
                     try:
                         # dont use use initial values
                         _resultNode, evaluate_node_time = evaluate(
@@ -198,17 +217,23 @@ class PureXArrayDynamic(BaseDynamic):
                     except Exception as ex:
                         raise ValueError(
                             f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
+                    
                     _finalNode = self._tryFilter(
                         _resultNode, dynamicIndex, item)
+                    
+                    cyclicDic[_id] = _finalNode
 
                     start_extra_process_time = dt.datetime.now()
-                    try:
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.values
-                    except Exception as ex:
-                        list_dims = list(cyclicDic[_id].dims)
-                        list_dims.remove(dynamicIndex.name)
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
-                            *list_dims, transpose_coords=True).values
+                    
+                    # try:
+                    #     cyclicDic[_id].loc[loc_dic] = _finalNode.values
+                    # except Exception as ex:
+                    #     list_dims = list(cyclicDic[_id].dims)
+                    #     list_dims.remove(dynamicIndex.name)
+                    #     cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
+                    #         *list_dims, transpose_coords=True).values
+
+                result_dic[_id].append(_finalNode)
 
                 _node["calcTime"] += evaluate_node_time + \
                     evaluate_initial_params_time
@@ -224,20 +249,22 @@ class PureXArrayDynamic(BaseDynamic):
             else:
                 for _var in dynamicVars:
                     _key = "__" + _var + "_t"
-                    if reverseMode:
-                        cyclicDic[_key] = self._tryFilter(
-                            cyclicDic[_var], dynamicIndex, dynamicIndex.values[nn+shift-1])
-                    else:
-                        cyclicDic[_key] = self._tryFilter(
-                            cyclicDic[_var], dynamicIndex, dynamicIndex.values[nn-initialCount+1])
+                    cyclicDic[_key] = cyclicDic[_var]
+                    # if reverseMode:
+                    #     cyclicDic[_key] = self._tryFilter(
+                    #         cyclicDic[_var], dynamicIndex, dynamicIndex.values[nn+shift-1])
+                    # else:
+                    #     cyclicDic[_key] = self._tryFilter(
+                    #         cyclicDic[_var], dynamicIndex, dynamicIndex.values[nn-initialCount+1])
 
         # set result
         for _node in cyclicNodes:
-            _id = _node["node"].identifier
-            _node["node"]._result = cyclicDic[_id]
-            _node["node"]._isCalc = True
-            _node["node"].lastEvaluationTime = _node["calcTime"]
-            _node["node"].evaluationVersion = node.model.evaluationVersion
+            cyclic_node = _node["node"]
+            _id = cyclic_node.identifier
+            cyclic_node._result = xr.concat(result_dic[_id], dim=dynamicIndex)
+            cyclic_node._isCalc = True
+            cyclic_node.lastEvaluationTime = _node["calcTime"]
+            cyclic_node.evaluationVersion = node.model.evaluationVersion
 
         if node.model.debugMode:
             for circular_node_id in nodesInCyclic:
