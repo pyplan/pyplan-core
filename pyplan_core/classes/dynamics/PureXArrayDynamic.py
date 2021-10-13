@@ -121,14 +121,26 @@ class PureXArrayDynamic(BaseDynamic):
             initialCount = len(dynamicIndex.values)-1-shift
             reverseMode = True
 
+        # print(f"External inputs: {len(external_inputs)}")
+        # [print("Shapes: " + str(xx.shape)) for xx in external_inputs.values()]
+        # print(f"Rage: {theRange}")
+
+
         for nn in theRange:
             item = dynamicIndex.values[nn]
             loc_dic = {dynamicIndex.name: slice(item, item)}
 
-            #overwrite external inputs result
+            #Overwrite external inputs result
             for external_input_id, external_input in external_inputs.items():
-                input_witout_time = external_input.loc[loc_dic].squeeze(drop=True)
-                node.model.getNode(external_input_id)._result = input_witout_time
+                try:
+                    input_witout_time = external_input.loc[loc_dic].squeeze(drop=True)
+                    if len(input_witout_time.dims)==0:
+                        input_witout_time = input_witout_time.item(0)
+
+                    #input_witout_time = external_input.loc[loc_dic]#.squeeze(drop=True)
+                    node.model.getNode(external_input_id)._result = input_witout_time
+                except Exception as ex:
+                    print(f'"\033[91mERROR FILTRANDO EXTERNAL INPUTS {ex}\033[0m')
 
             # load params
             cyclicParams = {
@@ -234,7 +246,7 @@ class PureXArrayDynamic(BaseDynamic):
                     circular_node.sendEndCalcNode(fromDynamic=True)
 
         for external_input_id, external_input in external_inputs.items():
-                node.model.getNode(external_input_id)._result = external_input
+            node.model.getNode(external_input_id)._result = external_input
 
         evaluate = None
         model = None

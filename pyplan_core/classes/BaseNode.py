@@ -577,8 +577,8 @@ class BaseNode(object):
                     # execute node definition in supervised context
                     memoryIO = io.StringIO()
                     try:
-                        with redirect_stdout(memoryIO):
-                            exec(compile(finalDef, '<string>', 'exec'), localRes)
+                        #with redirect_stdout(memoryIO):
+                        exec(compile(finalDef, '<string>', 'exec'), localRes)
                     except Exception as ex:
                         if "_io.StringIO" in str(ex):
                             exec(compile(finalDef, '<string>', 'exec'), localRes)
