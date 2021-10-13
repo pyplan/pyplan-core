@@ -35,7 +35,6 @@ class PureXArrayDynamic(BaseDynamic):
             node.model.inCyclicEvaluate = True
             for nodeId in nodesInCyclic:
                 evaluate_start_time = time.time()
-
                 _nodeObj = node.model.getNode(nodeId)
                 _nodeResult = _nodeObj.bypassCircularEvaluator().result
 
@@ -62,6 +61,7 @@ class PureXArrayDynamic(BaseDynamic):
                 evaluate_end_time = time.time()
                 evaluate_total_time = evaluate_end_time - evaluate_start_time
                 cyclic_item["calcTime"] += evaluate_total_time
+
         except Exception as e:
             raise e
         finally:
@@ -119,11 +119,6 @@ class PureXArrayDynamic(BaseDynamic):
             theRange = range(len(dynamicIndex.values)-1, -1, -1)
             initialCount = len(dynamicIndex.values)-1-shift
             reverseMode = True
-
-        # print(f"External inputs: {len(external_inputs)}")
-        # [print("Shapes: " + str(xx.shape)) for xx in external_inputs.values()]
-        # print(f"Rage: {theRange}")
-
 
         for nn in theRange:
             item = dynamicIndex.values[nn]
@@ -205,7 +200,7 @@ class PureXArrayDynamic(BaseDynamic):
                             *list_dims, transpose_coords=True).values
 
                 evaluate_end_time = time.time()
-                evaluate_total_time = evaluate_end_time - evaluate_start_time
+                evaluate_total_time = evaluate_end_time - evaluate_start_time                
                 _node["calcTime"] += evaluate_total_time
 
             # set dynamicVar
@@ -227,7 +222,7 @@ class PureXArrayDynamic(BaseDynamic):
             _id = _node["node"].identifier
             _node["node"]._result = cyclicDic[_id]
             _node["node"]._isCalc = True
-            _node["node"].lastEvaluationTime = _node["calcTime"]
+            _node["node"].lastEvaluationTime = _node["calcTime"] - _node["node"].lastLazyTime
             _node["node"].evaluationVersion = node.model.evaluationVersion
 
         if node.model.debugMode:
