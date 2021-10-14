@@ -51,13 +51,14 @@ class PureXArrayDynamic(BaseDynamic):
                     nodesWoDynamicIndex.append(_nodeObj.identifier)
 
                 # Get external inputs
-                _external_inputs_ids = set(_nodeObj.inputs) - set(nodesInCyclic) 
+                _external_inputs_ids = set(
+                    _nodeObj.inputs) - set(nodesInCyclic)
                 for node_id in _external_inputs_ids:
                     if node_id not in external_inputs and node.model.existNode(node_id):
                         input_result = node.model.getNode(node_id).result
                         if isinstance(input_result, xr.DataArray) and dynamicIndex.name in input_result.dims:
                             external_inputs[node_id] = input_result
-                
+
                 evaluate_end_time = time.time()
                 evaluate_total_time = evaluate_end_time - evaluate_start_time
                 cyclic_item["calcTime"] += evaluate_total_time
@@ -124,17 +125,20 @@ class PureXArrayDynamic(BaseDynamic):
             item = dynamicIndex.values[nn]
             loc_dic = {dynamicIndex.name: slice(item, item)}
 
-            #Overwrite external inputs result
+            # Overwrite external inputs result
             for external_input_id, external_input in external_inputs.items():
                 try:
-                    input_witout_time = external_input.loc[loc_dic].squeeze(drop=True)
-                    if len(input_witout_time.dims)==0:
+                    input_witout_time = external_input.loc[loc_dic].squeeze(
+                        drop=True)
+                    if len(input_witout_time.dims) == 0:
                         input_witout_time = input_witout_time.item(0)
 
-                    #input_witout_time = external_input.loc[loc_dic]#.squeeze(drop=True)
-                    node.model.getNode(external_input_id)._result = input_witout_time
+                    # input_witout_time = external_input.loc[loc_dic]#.squeeze(drop=True)
+                    node.model.getNode(
+                        external_input_id)._result = input_witout_time
                 except Exception as ex:
-                    print(f'"\033[91mERROR FILTRANDO EXTERNAL INPUTS {ex}\033[0m')
+                    print(
+                        f'"\033[91mERROR FILTRANDO EXTERNAL INPUTS {ex}\033[0m')
 
             # load params
             cyclicParams = {
@@ -171,16 +175,11 @@ class PureXArrayDynamic(BaseDynamic):
                         _finalNode = self._tryFilter(
                             _resultNode, dynamicIndex, item) + _initialValues
 
-                    try:
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.values
-                    except Exception as ex:
-                        list_dims = list(cyclicDic[_id].dims)
-                        list_dims.remove(dynamicIndex.name)
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
-                            *list_dims, transpose_coords=True).values
+                    final_array = self.assignNewValues(
+                        dynamicIndex.name, _finalNode, cyclicDic[_id], loc_dic)
+                    cyclicDic[_id] = final_array
 
                 else:
-
                     try:
                         # dont use use initial values
                         _resultNode = evaluate(
@@ -191,16 +190,12 @@ class PureXArrayDynamic(BaseDynamic):
                     _finalNode = self._tryFilter(
                         _resultNode, dynamicIndex, item)
 
-                    try:
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.values
-                    except Exception as ex:
-                        list_dims = list(cyclicDic[_id].dims)
-                        list_dims.remove(dynamicIndex.name)
-                        cyclicDic[_id].loc[loc_dic] = _finalNode.transpose(
-                            *list_dims, transpose_coords=True).values
+                    final_array = self.assignNewValues(
+                        dynamicIndex.name, _finalNode, cyclicDic[_id], loc_dic)
+                    cyclicDic[_id] = final_array
 
                 evaluate_end_time = time.time()
-                evaluate_total_time = evaluate_end_time - evaluate_start_time                
+                evaluate_total_time = evaluate_end_time - evaluate_start_time
                 _node["calcTime"] += evaluate_total_time
 
             # set dynamicVar
@@ -222,7 +217,8 @@ class PureXArrayDynamic(BaseDynamic):
             _id = _node["node"].identifier
             _node["node"]._result = cyclicDic[_id]
             _node["node"]._isCalc = True
-            _node["node"].lastEvaluationTime = _node["calcTime"] - _node["node"].lastLazyTime
+            _node["node"].lastEvaluationTime = _node["calcTime"] - \
+                _node["node"].lastLazyTime
             _node["node"].evaluationVersion = node.model.evaluationVersion
 
         if node.model.debugMode:
@@ -374,3 +370,45 @@ class PureXArrayDynamic(BaseDynamic):
             return array.sel(_dic, drop=True)
         except Exception as ex:
             return array
+
+    def assignNewValues(
+        self,
+        dynamic_index_name: str,
+        new_values: xr.DataArray,
+        destination: xr.DataArray,
+        loc_dic: dict
+    ):
+        destination_array = destination.copy()
+        new_values_array = new_values.copy()
+
+        try:
+            destination_array.loc[loc_dic] = new_values_array.values
+        except Exception as ex:
+            try:
+                # Add new dims in destination array
+                new_dims_dict = {
+                    dim: new_values_array.coords[dim] for dim in new_values_array.dims if dim not in destination_array.dims}
+                if new_dims_dict:
+                    destination_array = destination_array.expand_dims(
+                        new_dims_dict).copy()  # copying to avoid view error
+                # Get all dims in both arrays and reorder them with dynamic_index_name first
+                all_dims = set(destination_array.dims)
+                all_dims.update(set(new_values_array.dims))
+                all_dims_list = list(all_dims)
+                all_dims_list.remove(dynamic_index_name)
+                all_dims_reordered = [
+                    dynamic_index_name] + all_dims_list
+                # Reshape destination and new_values arrays so that both are in the same order
+                destination_array = destination_array.transpose(
+                    *[dim for dim in all_dims_reordered if dim in destination_array.dims], transpose_coords=True)
+                new_values_array = new_values_array.transpose(
+                    *[dim for dim in all_dims_reordered if dim in new_values_array.dims], transpose_coords=True)
+                # Assign new values to destination array
+                destination_array.loc[loc_dic] = new_values_array.values
+            except Exception as ex:
+                list_dims = list(destination_array.dims)
+                list_dims.remove(dynamic_index_name)
+                destination_array.loc[loc_dic] = new_values_array.transpose(
+                    *list_dims, transpose_coords=True).values
+
+        return destination_array
