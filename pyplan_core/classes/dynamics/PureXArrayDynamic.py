@@ -30,6 +30,7 @@ class PureXArrayDynamic(BaseDynamic):
         cyclicNodes = []
         nodesWoDynamicIndex = []
         external_inputs = dict()
+        general_time = 0
 
         try:
             node.model.inCyclicEvaluate = True
@@ -127,6 +128,8 @@ class PureXArrayDynamic(BaseDynamic):
 
             # Overwrite external inputs result
             for external_input_id, external_input in external_inputs.items():
+                evaluate_start_time = time.time()
+
                 try:
                     input_witout_time = external_input.loc[loc_dic].squeeze(
                         drop=True)
@@ -139,6 +142,10 @@ class PureXArrayDynamic(BaseDynamic):
                 except Exception as ex:
                     print(
                         f'"\033[91mERROR FILTRANDO EXTERNAL INPUTS {ex}\033[0m')
+
+                evaluate_end_time = time.time()
+                evaluate_total_time = evaluate_end_time - evaluate_start_time
+                general_time += evaluate_total_time
 
             # load params
             cyclicParams = {
@@ -204,6 +211,8 @@ class PureXArrayDynamic(BaseDynamic):
                 pass
             else:
                 for _var in dynamicVars:
+                    evaluate_start_time = time.time()
+
                     _key = "__" + _var + "_t"
                     if reverseMode:
                         cyclicDic[_key] = self._tryFilter(
@@ -212,13 +221,27 @@ class PureXArrayDynamic(BaseDynamic):
                         cyclicDic[_key] = self._tryFilter(
                             cyclicDic[_var], dynamicIndex, dynamicIndex.values[nn-initialCount+1])
 
+                    evaluate_end_time = time.time()
+                    evaluate_total_time = evaluate_end_time - evaluate_start_time
+                    _node = cyclicNodes[nodesInCyclic.index(_var)]
+                    _node["calcTime"] += evaluate_total_time
+
+        evaluate_start_time = time.time()
+        for external_input_id, external_input in external_inputs.items():
+            node.model.getNode(external_input_id)._result = external_input
+
+        evaluate_end_time = time.time()
+        evaluate_total_time = evaluate_end_time - evaluate_start_time
+        general_time += evaluate_total_time
+
+        general_time_proportion = general_time / len(nodesInCyclic)
         # set result
         for _node in cyclicNodes:
             _id = _node["node"].identifier
             _node["node"]._result = cyclicDic[_id]
             _node["node"]._isCalc = True
             _node["node"].lastEvaluationTime = _node["calcTime"] - \
-                _node["node"].lastLazyTime
+                _node["node"].lastLazyTime + general_time_proportion
             _node["node"].evaluationVersion = node.model.evaluationVersion
 
         if node.model.debugMode:
@@ -226,9 +249,6 @@ class PureXArrayDynamic(BaseDynamic):
                 circular_node = node.model.getNode(circular_node_id)
                 if not circular_node is None:
                     circular_node.sendEndCalcNode(fromDynamic=True)
-
-        for external_input_id, external_input in external_inputs.items():
-            node.model.getNode(external_input_id)._result = external_input
 
         evaluate = None
         model = None
