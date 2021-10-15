@@ -288,6 +288,7 @@ class PureXArrayDynamic(BaseDynamic):
 
     def generateInitDef(self, node, nodeCube, dynamicIndex):
         """Return definition used for initialice vars in circular evaluator"""
+        
         if isinstance(nodeCube, xr.DataArray):
             _list = list(nodeCube.dims[:])
             if not dynamicIndex.name in _list:
@@ -295,8 +296,7 @@ class PureXArrayDynamic(BaseDynamic):
             _dims = ','.join(_list)
             _def = f"result = pp.create_dataarray(0.,[{_dims}])"
             return _def
-        else:
-            return f"result = pp.create_dataarray(0.,[{dynamicIndex.name}])"
+        return f"result = pp.create_dataarray(0.,[{dynamicIndex.name}])"
 
     def generateCircularParameters(self, node, nodeList):
         """Generate paremters for call to circularEval"""
