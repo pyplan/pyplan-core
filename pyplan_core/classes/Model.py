@@ -1223,7 +1223,7 @@ class Model(object):
                 node.fromObj(obj)
                 node = None
 
-        [self.nodeDic[nod].generateIO() for nod in self.nodeDic]
+        [self.nodeDic[nod].generateIO() for nod in list(self.nodeDic.keys())]
 
         opened = None
         self._isLoadingModel = False
