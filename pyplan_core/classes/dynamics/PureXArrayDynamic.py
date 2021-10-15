@@ -182,9 +182,8 @@ class PureXArrayDynamic(BaseDynamic):
                         _finalNode = self._tryFilter(
                             _resultNode, dynamicIndex, item) + _initialValues
 
-                    final_array = self.assignNewValues(
+                    cyclicDic[_id] = self.assignNewValues(
                         dynamicIndex.name, _finalNode, cyclicDic[_id], loc_dic)
-                    cyclicDic[_id] = final_array
 
                 else:
                     try:
@@ -197,9 +196,8 @@ class PureXArrayDynamic(BaseDynamic):
                     _finalNode = self._tryFilter(
                         _resultNode, dynamicIndex, item)
 
-                    final_array = self.assignNewValues(
+                    cyclicDic[_id] = self.assignNewValues(
                         dynamicIndex.name, _finalNode, cyclicDic[_id], loc_dic)
-                    cyclicDic[_id] = final_array
 
                 evaluate_end_time = time.time()
                 evaluate_total_time = evaluate_end_time - evaluate_start_time
@@ -398,8 +396,8 @@ class PureXArrayDynamic(BaseDynamic):
         destination: xr.DataArray,
         loc_dic: dict
     ):
-        destination_array = destination.copy()
-        new_values_array = new_values.copy()
+        destination_array = destination
+        new_values_array = new_values
 
         try:
             destination_array.loc[loc_dic] = new_values_array.values
