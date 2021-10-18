@@ -577,8 +577,8 @@ class BaseNode(object):
                     # execute node definition in supervised context
                     memoryIO = io.StringIO()
                     try:
-                        #with redirect_stdout(memoryIO):
-                        exec(compile(finalDef, '<string>', 'exec'), localRes)
+                        with redirect_stdout(memoryIO):
+                            exec(compile(finalDef, '<string>', 'exec'), localRes)
                     except Exception as ex:
                         if "_io.StringIO" in str(ex):
                             exec(compile(finalDef, '<string>', 'exec'), localRes)
@@ -721,21 +721,10 @@ class BaseNode(object):
         """
         Return list of nodes in circular dependencyes, sortered by execution order
         """
-        res = []
         if self.isCircular():
-            res = [self.identifier if self.originalId is None else self.originalId]
-            # fill node inputs
-            nn = 0
-            while nn < len(res):
-                _node = res[nn]
-                for _inputId in self.model.getNode(_node).ioEngine.inputs:
-                    input_node = self.model.getNode(_inputId)
-                    if not _inputId in res and input_node.isCircular():
-                        # check if node is in circle of _inputId
-                        if _node in input_node.getFullInputs():
-                            res.append(_inputId)
-                nn += 1
-        return res
+            full_imports = self.getFullInputs()
+            full_outputs = self.getFullOutputs()
+            return list(set(full_imports).intersection(full_outputs))
 
     def profileNode(self, evaluated, response, evaluationVersion, profileParentId):
         """Perform node profile"""
