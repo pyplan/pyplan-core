@@ -24,7 +24,8 @@ class PureXArrayDynamic(BaseDynamic):
             for circular_node_id in nodesInCyclic:
                 circular_node = node.model.getNode(circular_node_id)
                 if not circular_node is None:
-                    circular_node.sendStartCalcNode(fromDynamic=True)
+                    circular_node.sendStartCalcNode(
+                        fromDynamic=node.identifier)
 
         # create nodes array
         cyclicNodes = []
@@ -248,7 +249,7 @@ class PureXArrayDynamic(BaseDynamic):
             for circular_node_id in nodesInCyclic:
                 circular_node = node.model.getNode(circular_node_id)
                 if not circular_node is None:
-                    circular_node.sendEndCalcNode(fromDynamic=True)
+                    circular_node.sendEndCalcNode(fromDynamic=node.identifier)
 
         evaluate = None
         model = None
@@ -288,7 +289,7 @@ class PureXArrayDynamic(BaseDynamic):
 
     def generateInitDef(self, node, nodeCube, dynamicIndex):
         """Return definition used for initialice vars in circular evaluator"""
-        
+
         if isinstance(nodeCube, xr.DataArray):
             _list = list(nodeCube.dims[:])
             if not dynamicIndex.name in _list:

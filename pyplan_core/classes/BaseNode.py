@@ -811,12 +811,12 @@ class BaseNode(object):
         self._hierarchy_parents = parents
         self._hierarchy_maps = maps
 
-    def sendStartCalcNode(self, fromCircularEvaluator=False, fromDynamic=False):
+    def sendStartCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
         if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
             self._model.ws.sendDebugInfo(
                 self.identifier, self.title if self.title else "", "startCalc", fromDynamic=fromDynamic)
 
-    def sendEndCalcNode(self, fromCircularEvaluator=False, fromDynamic=False):
+    def sendEndCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
         if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
             resources = None
             try:
