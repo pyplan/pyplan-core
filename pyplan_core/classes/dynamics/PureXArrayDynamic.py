@@ -290,7 +290,7 @@ class PureXArrayDynamic(BaseDynamic):
         return f"result = pp.create_dataarray(0.,[{dynamicIndex.name}])"
 
     def generateCircularParameters(self, node, nodeList):
-        """Generate paremters for call to circularEval"""
+        """Generate parameters for circularEval"""
         dynamicVars = []
         dynamicIndex = None
         nodesInCyclic = []  # nodeList TODO: Determinar orden de nodos
@@ -299,21 +299,15 @@ class PureXArrayDynamic(BaseDynamic):
         shift = -1
         sliceInputs = False
 
-        paramsPattern = r',(?![^(]*\))'
-
         for _nodeId in nodeList:
             if node.model.existNode(_nodeId):
-                _def = node.model.getNode(_nodeId).definition.replace(
-                    ' ', '')  # remove all whitespaces
-
-                dynamicParams = self.getDynamicParameters(_def)
-                if dynamicParams is not None:
-                    args_list = re.split(paramsPattern, dynamicParams)
-
+                node_def = node.model.getNode(_nodeId).definition
+                args_list = self.getParametersFromDefinition(node_def)
+                if args_list is not None:
                     for idx, arg in enumerate(args_list):
                         final_arg = arg
 
-                        # Remove argument name fro arg like 'initialValues='
+                        # Remove argument name from arg like 'initialValues='
                         arg_str = f'{PureXArrayDynamic.ARGS[idx]}='
                         if final_arg.startswith(arg_str):
                             final_arg = final_arg[len(arg_str):]
@@ -322,25 +316,22 @@ class PureXArrayDynamic(BaseDynamic):
                         if idx == 0:
                             if not final_arg in dynamicVars:
                                 dynamicVars.append(final_arg)
-                            break
                         # index
                         elif idx == 1:
                             dynamicIndex = node.model.getNode(final_arg).result
                             if not dynamicIndex.name in indexDic:
                                 indexDic[dynamicIndex.name] = _nodeId
-                            break
                         # shift
                         elif idx == 2:
                             shift = int(final_arg)
-                            break
                         # initialValues
                         elif idx == 3:
                             initialValues[_nodeId] = f'result = {final_arg}'
-                            break
                         # sliceInputs
                         elif idx == 4:
-                            sliceInputs = final_arg == 'True'
-                            break
+                            # Set to True if there is at least one def with True
+                            if not sliceInputs:
+                                sliceInputs = final_arg == 'True'
 
         _graph = {}
         for _nodeId in nodeList:
@@ -366,36 +357,29 @@ class PureXArrayDynamic(BaseDynamic):
 
         }
 
-    def clearCircularDependency(self, stringDef, replaceWith="0"):
-        """ Replaces pp.dynamic(x,y,z) for the desired replaceWith param"""
-        response = stringDef
-        initialIndex = -1
-        startIndex = -1
-        finalIndex = -1
-        toReplace = ''
-        initialIndex = stringDef.find('pp.dynamic(')
-        if initialIndex != -1:
-            startIndex = initialIndex
-            initialIndex = initialIndex + len('pp.dynamic(')
-            if len(stringDef) > initialIndex:
-                finalIndex = stringDef[initialIndex+1:].find(')')
-        else:
-            initialIndex = stringDef.find('dynamic(')
-            if initialIndex != -1:
-                startIndex = initialIndex
-                initialIndex = initialIndex + len('dynamic(')
-                if len(stringDef) > initialIndex:
-                    finalIndex = stringDef[initialIndex+1:].find(')')
+    def clearCircularDependency(self, definition: str, replace_with: str = '0') -> str:
+        """Replaces pp.dynamic(x,y,z) with the desired replace_with param"""
+        new_def = definition
+        replacement_value = replace_with
 
-        if initialIndex != -1 and finalIndex != -1:
-            toReplace = stringDef[startIndex:initialIndex + finalIndex + 2]
-            if "cyclicDic" in replaceWith:
-                nodeInT1 = toReplace.split(",")[0]
-                nodeInT1 = nodeInT1[(nodeInT1.find("(")+1):]
-                replaceWith = replaceWith.replace("##node##", nodeInT1.strip())
-            response = stringDef.replace(toReplace, replaceWith)
+        dynamic_positions = self.getPositionsFromDefinition(definition)
+        if dynamic_positions is not None:
+            dynamic_initial_pos, dynamic_last_pos = dynamic_positions
+            dynamic_def = definition[dynamic_initial_pos:dynamic_last_pos+1]
 
-        return response
+            if 'cyclicDic' in replace_with:
+                # Get dataArray parameter
+                dynamic_params = self.getParametersFromDefinition(
+                    definition)
+                if dynamic_params is not None:
+                    # Replace dataArray parameter
+                    dataArray_param = dynamic_params[0]
+                    replacement_value = replacement_value.replace(
+                        '##node##', dataArray_param)
+
+            new_def = new_def.replace(dynamic_def, replacement_value)
+
+        return new_def
 
     def _tryFilter(self, array, dim, value):
         try:
@@ -447,25 +431,3 @@ class PureXArrayDynamic(BaseDynamic):
                     *list_dims, transpose_coords=True).values
 
         return destination_array
-
-    def getDynamicParameters(self, definition: str) -> str:
-        """Returns string with definition inside dynamic parentheses"""
-        dynamic_pos = definition.find('dynamic(')
-
-        if dynamic_pos != -1:
-            initial_pos = dynamic_pos + 8
-            new_def = definition[initial_pos:]  # remove 'dynamic('
-
-            final_pos = -1
-            open_prt = 1
-            for pos, w in enumerate(new_def, initial_pos):
-                if w == '(':
-                    open_prt += 1
-                elif w == ')':
-                    open_prt -= 1
-                    if open_prt == 0:
-                        final_pos = pos
-                        break
-
-            if final_pos != -1:
-                return definition[initial_pos:final_pos]
