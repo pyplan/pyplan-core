@@ -1,16 +1,11 @@
 import os
 from time import time
 
+import xarray as xr
+
 from pyplan_core.pyplan import Pyplan
 
 tests = [
-    {
-        "name": "Generic Business Demo",
-        "filename": os.path.dirname(os.path.abspath(__file__)) + "/tests//models/Generic Business Demo/Generic Business Demo pp.ppl",
-        "value": 4397867,
-        "node": "check_sum_all",
-        "old_time": 11
-    },
     {
         "name": "Pruebas Dynamic",
         "filename": os.path.dirname(os.path.abspath(__file__)) + "/tests/models/Pruebas Dynamic/Pruebas Dynamic.ppl",
