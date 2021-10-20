@@ -640,7 +640,7 @@ class PyplanFunctions(object):
         _df = dataframe[_cols]
 
         # Sum identical rows or remove duplicates.
-        if sumDuplicateRecords is True:
+        if sumDuplicateRecords:
             _df = _df.groupby(_index_cols, as_index=False).sum()
         else:
             _duplicate_rows = _df.duplicated(_index_cols)
@@ -655,16 +655,22 @@ class PyplanFunctions(object):
             domainDic[_index_value_columns_name] = _index_value_columns
 
             # Create DataArray
-            _data = _df.set_index(_index_cols)['values'].to_xarray()
-
-            # Appy set_domain function to DataArray / Dataset.
-            _data = self.set_domain(_data, domainDic, defaultValue)
+            _data = _df.set_index(_index_cols)['values']
+            _data = xr.DataArray.from_series(_data, sparse=True)
+            _data.data = _data.data.todense()
         else:
             # Create DataArray / Dataset.
-            _data = _df.set_index(_index_cols)[valueColumns].to_xarray()
-
-            # Appy set_domain function to DataArray / Dataset.
-            _data = self.set_domain(_data, domainDic, defaultValue)
+            _data = _df.set_index(_index_cols)[valueColumns]
+            if isinstance(_data, pd.Series):
+                _data = xr.DataArray.from_series(_data, sparse=True)
+                _data.data = _data.data.todense()
+            else:  # DataFrame
+                _data = xr.Dataset.from_dataframe(_data, sparse=True)
+                for var in _data:
+                    _data[var].data = _data[var].data.todense()
+        
+        # Apply set_domain function to DataArray / Dataset.
+        _data = self.set_domain(_data, domainDic, defaultValue)
 
         return _data
 
