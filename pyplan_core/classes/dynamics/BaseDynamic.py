@@ -19,10 +19,6 @@ class BaseDynamic(object):
                 definition)
             if dynamic_params is not None and len(dynamic_params) >= 4:
                 initial_values_param = dynamic_params[3]
-                # Remove 'initialValues='
-                if initial_values_param.startswith('initialValues='):
-                    initial_values_param = initial_values_param.replace(
-                        'initialValues=', '')
                 replacement_value = initial_values_param
 
             new_def = definition.replace(dynamic_def, replacement_value)
@@ -61,22 +57,27 @@ class BaseDynamic(object):
     def getParametersFromDefinition(definition: str) -> list:
         """Returns a list of string parameters of first dynamic function in definition"""
         params_pattern = r',(?![^(]*\))'
+        param_names_pattern = r'^[a-zA-Z0-9_]+=(?!=)'  # starts with 'initialValues='
 
         dynamic_positions = BaseDynamic.getPositionsFromDefinition(definition)
         if dynamic_positions is not None:
             dynamic_initial_pos, dynamic_last_pos = dynamic_positions
             dynamic_def = definition[dynamic_initial_pos:
-                                     dynamic_last_pos+1].replace(' ', '')
+                                     dynamic_last_pos+1].replace(' ', '').replace('\n', '').replace('\t', '')
             first_prt_pos = dynamic_def.find('(')
             # remove (pp.|cp.)dynamic( and last parenthesis
             dynamic_params_def = dynamic_def[first_prt_pos+1:
                                              len(dynamic_def)-1]
+            params_list = re.split(params_pattern, dynamic_params_def)
+            if params_list is not None:
+                # Remove param names
+                final_params_list = [
+                    re.sub(param_names_pattern, '', param) for param in params_list]
 
-            return re.split(params_pattern, dynamic_params_def)
+                return final_params_list
 
 
 # implementations
-
 
     def circularEval(self, node, params): raise ValueError("not implemented")
 

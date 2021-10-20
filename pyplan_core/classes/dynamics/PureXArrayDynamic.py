@@ -1,10 +1,10 @@
-from xarray.core import dataarray
+import re
+import time
+
+import numpy as np
+import xarray as xr
 from pyplan_core.classes.dynamics.BaseDynamic import BaseDynamic
 from pyplan_core.cubepy.Helpers import Helpers
-import numpy as np
-import re
-import xarray as xr
-import time
 
 
 class PureXArrayDynamic(BaseDynamic):
@@ -302,36 +302,25 @@ class PureXArrayDynamic(BaseDynamic):
         for _nodeId in nodeList:
             if node.model.existNode(_nodeId):
                 node_def = node.model.getNode(_nodeId).definition
-                args_list = self.getParametersFromDefinition(node_def)
-                if args_list is not None:
-                    for idx, arg in enumerate(args_list):
-                        final_arg = arg
-
-                        # Remove argument name from arg like 'initialValues='
-                        arg_str = f'{PureXArrayDynamic.ARGS[idx]}='
-                        if final_arg.startswith(arg_str):
-                            final_arg = final_arg[len(arg_str):]
-
-                        # dataArray
-                        if idx == 0:
-                            if not final_arg in dynamicVars:
-                                dynamicVars.append(final_arg)
-                        # index
-                        elif idx == 1:
-                            dynamicIndex = node.model.getNode(final_arg).result
-                            if not dynamicIndex.name in indexDic:
-                                indexDic[dynamicIndex.name] = _nodeId
-                        # shift
-                        elif idx == 2:
-                            shift = int(final_arg)
-                        # initialValues
-                        elif idx == 3:
-                            initialValues[_nodeId] = f'result = {final_arg}'
-                        # sliceInputs
-                        elif idx == 4:
-                            # Set to True if there is at least one def with True
-                            if not sliceInputs:
-                                sliceInputs = final_arg == 'True'
+                params_list = self.getParametersFromDefinition(node_def)
+                if params_list is not None:
+                    # dataArray
+                    dataArray_param = params_list[0]
+                    if dataArray_param not in dynamicVars:
+                        dynamicVars.append(dataArray_param)
+                    # index
+                    dynamicIndex = node.model.getNode(params_list[1]).result
+                    if dynamicIndex.name not in indexDic:
+                        indexDic[dynamicIndex.name] = _nodeId
+                    # shift
+                    shift = int(params_list[2])
+                    # initialValues
+                    if len(params_list) >= 4:
+                        initialValues[_nodeId] = f'result = {params_list[3]}'
+                    if len(params_list) >= 5:
+                        # Set to True if there is at least one def with True
+                        if not sliceInputs:
+                            sliceInputs = params_list[4] == 'True'
 
         _graph = {}
         for _nodeId in nodeList:
