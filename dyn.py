@@ -26,12 +26,19 @@ tests = [
         "node": "dis_fin_bal_controle",
         "value": 0,
         "old_time": 900
+    },
+    {
+        "name": "MOT",
+        "filename": os.path.dirname(os.path.abspath(__file__)) + "/tests/pyplan-private-models/MOT/mot.ppl",
+        "node": "bal_at_imp_rec_cp",
+        "value": 0,
+        "old_time": 900
     }
 ]
 
 def main():
 
-    run_test = tests[0]
+    run_test = tests[3]
 
     pyplan = Pyplan()
 

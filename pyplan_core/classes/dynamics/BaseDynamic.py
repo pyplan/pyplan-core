@@ -32,7 +32,7 @@ class BaseDynamic(object):
                 - pp.dynamic()
                 - cp.dynamic()
         """
-        pattern = r'(pp.|cp.)?dynamic\s*\('
+        pattern = r'(pp\.|cp\.)?dynamic\s*\('
         dynamic_search = re.search(pattern, definition)
         if dynamic_search is not None:
             dynamic_initial_pos = dynamic_search.span()[0]
