@@ -721,21 +721,10 @@ class BaseNode(object):
         """
         Return list of nodes in circular dependencyes, sortered by execution order
         """
-        res = []
         if self.isCircular():
-            res = [self.identifier if self.originalId is None else self.originalId]
-            # fill node inputs
-            nn = 0
-            while nn < len(res):
-                _node = res[nn]
-                for _inputId in self.model.getNode(_node).ioEngine.inputs:
-                    input_node = self.model.getNode(_inputId)
-                    if not _inputId in res and input_node.isCircular():
-                        # check if node is in circle of _inputId
-                        if _node in input_node.getFullInputs():
-                            res.append(_inputId)
-                nn += 1
-        return res
+            full_imports = self.getFullInputs()
+            full_outputs = self.getFullOutputs()
+            return list(set(full_imports).intersection(full_outputs))
 
     def profileNode(self, evaluated, response, evaluationVersion, profileParentId):
         """Perform node profile"""
@@ -822,12 +811,12 @@ class BaseNode(object):
         self._hierarchy_parents = parents
         self._hierarchy_maps = maps
 
-    def sendStartCalcNode(self, fromCircularEvaluator=False, fromDynamic=False):
+    def sendStartCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
         if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
             self._model.ws.sendDebugInfo(
                 self.identifier, self.title if self.title else "", "startCalc", fromDynamic=fromDynamic)
 
-    def sendEndCalcNode(self, fromCircularEvaluator=False, fromDynamic=False):
+    def sendEndCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
         if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
             resources = None
             try:
