@@ -8,7 +8,6 @@ from pyplan_core.cubepy.Helpers import Helpers
 
 
 class PureXArrayDynamic(BaseDynamic):
-    ARGS = ['dataArray', 'index', 'shift', 'initialValues', 'sliceInputs']
 
     def circularEval(self, node, params):
         """Used for execute nodes with circular reference (pp.dynamic)"""
