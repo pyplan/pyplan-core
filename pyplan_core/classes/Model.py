@@ -268,7 +268,12 @@ class Model(object):
                 if debugMode:
                     self.debugMode = debugMode
                     if debugMode == "node":
-                        self.nodeDic[nodeId].silentInvalidate()
+                        if self.nodeDic[nodeId].isCircular():
+                            circular_nodes = self.nodeDic[nodeId].getSortedCyclicDependencies()
+                            for circular_node_id in circular_nodes:
+                                self.nodeDic[circular_node_id].silentInvalidate()
+                        else:
+                            self.nodeDic[nodeId].silentInvalidate()
                     elif debugMode == "model":
                         for node_key in self.nodeDic:
                             self.nodeDic[node_key].silentInvalidate()
