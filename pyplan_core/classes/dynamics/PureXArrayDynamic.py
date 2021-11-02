@@ -388,6 +388,9 @@ class PureXArrayDynamic(BaseDynamic):
         destination_array = destination
         new_values_array = new_values
 
+        destination_array = self.reshapeDataArrays(
+            dynamic_index_name, destination_array, list(new_values_array.dims))
+
         try:
             destination_array.loc[loc_dic] = new_values_array.values
         except Exception as ex:
@@ -417,5 +420,26 @@ class PureXArrayDynamic(BaseDynamic):
                 list_dims.remove(dynamic_index_name)
                 destination_array.loc[loc_dic] = new_values_array.transpose(
                     *list_dims, transpose_coords=True).values
+
+        return destination_array
+
+    def reshapeDataArrays(
+        self,
+        dynamic_index_name: str,
+        destination: xr.DataArray,
+        new_values_dims: list
+    ) -> xr.DataArray:
+        """Reshape dimensions and coords to avoid problems when
+           there are 2 or more dims with same number of elements
+        """
+        destination_array = destination
+
+        destination_dims = list(destination_array.dims)
+        destination_dims.remove(dynamic_index_name)
+        if len(destination_dims) == len(new_values_dims) and destination_dims != new_values_dims:
+            # This should happen only after first assignment; afterwards, it will have the correct shape
+            reordered_dims = [dynamic_index_name] + new_values_dims
+            destination_array = destination_array.transpose(
+                *reordered_dims).copy()  # copying to avoid view error
 
         return destination_array
