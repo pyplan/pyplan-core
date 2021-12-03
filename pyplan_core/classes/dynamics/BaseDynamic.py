@@ -19,7 +19,8 @@ class BaseDynamic(object):
                 definition)
             if dynamic_params is not None and len(dynamic_params) >= 4:
                 initial_values_param = dynamic_params[3]
-                replacement_value = initial_values_param
+                if initial_values_param != dynamic_params[0]:
+                    replacement_value = initial_values_param
 
             new_def = definition.replace(dynamic_def, replacement_value)
 
