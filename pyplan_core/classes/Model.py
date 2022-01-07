@@ -16,17 +16,19 @@ import jsonpickle
 import numpy
 import pandas
 import xarray as xr
-
 from pyplan_core import cubepy
+from pyplan_core.classes.ArrowsManager import ArrowsManager
 from pyplan_core.classes.BaseNode import BaseNode
 from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.Intellisense import Intellisense
 from pyplan_core.classes.IOModule import IOModule
 from pyplan_core.classes.PyplanFunctions import PyplanFunctions, Selector
-from pyplan_core.classes.wizards import (CalculatedField, DataarrayFromPandas,
+from pyplan_core.classes.wizards import (CalculatedField, CreateIndex,
+                                         DataArrayFilter, DataarrayFromPandas,
                                          DataframeGroupby, DataframeIndex,
-                                         InputTable, SelectColumns, SelectRows,
-                                         sourcecsv, CreateIndex, IndexFromPandas, DataArrayFilter, EditIndex, RenameIndexItem)
+                                         EditIndex, IndexFromPandas,
+                                         InputTable, RenameIndexItem,
+                                         SelectColumns, SelectRows, sourcecsv)
 from pyplan_core.classes.ws.settings import ws_settings
 
 from .DefaultNodeFormats import default_formats
@@ -584,294 +586,15 @@ class Model(object):
             evaluator = Evaluator.createInstance(self.nodeDic[nodeId].result)
             res = evaluator.isTable(self.getNode(nodeId))
         return res
+    
+    def get_arrows(self, module_id):
+        """
+        Returns a list of dicts of all arrows inside module_id
+        """
+        
+        arrows_manager = ArrowsManager(model=self)
 
-    def getArrows(self, moduleId):
-        """Return all arrows of moduleId"""
-        res = []
-        modulesInLevel = []
-        inputsInOtherLevel = []
-        outputsInOtherLevel = []
-        thisLevel = self.findNodes('moduleId', moduleId)
-        thisIds = [node.identifier for node in thisLevel]
-        for node in thisLevel:
-            if node.nodeClass == 'module':
-                modulesInLevel.append(node.identifier)
-
-        # node to node
-        for node in thisLevel:
-            if node.nodeClass not in ['module', 'text']:
-                for outputNodeId in node.outputs:
-                    # aliases
-                    fullOutputs = []
-                    fullOutputs = self.findNodes('originalId', outputNodeId)
-                    fullOutputs.append(self.getNode(outputNodeId))
-                    for o in fullOutputs:
-                        if not o is None:
-                            element = {'from': node.identifier,
-                                       'to': o.identifier}
-                            if o.identifier in thisIds:
-                                if node.nodeInfo.showOutputs and o.nodeInfo.showInputs:
-                                    if self.existArrow(element['from'], element['to'], res) == False:
-                                        res.append(element)
-                            elif o.identifier not in thisIds:
-                                if self.existArrow(element['from'], element['to'], outputsInOtherLevel) == False:
-                                    # if theres an alias in this level don't include the arrow
-                                    if not len(self.getAliasInLevel(o.identifier, moduleId)) > 0:
-                                        outputsInOtherLevel.append(element)
-                for inputNodeId in node.inputs:
-                    # aliases
-                    fullInputs = []
-                    fullInputs = self.findNodes('originalId', inputNodeId)
-                    fullInputs.append(self.getNode(inputNodeId))
-                    for i in fullInputs:
-                        if not i is None:
-                            element = {'from': i.identifier,
-                                       'to': node.identifier}
-                            if i.identifier in thisIds:
-                                if i.nodeInfo.showOutputs and node.nodeInfo.showInputs:
-                                    if self.existArrow(element['from'], element['to'], res) == False:
-                                        res.append(element)
-                            elif i.identifier not in thisIds:
-                                if self.existArrow(element['from'], element['to'], inputsInOtherLevel) == False:
-                                    # if theres an alias in this level don't include the arrow
-                                    if not len(self.getAliasInLevel(i.identifier, moduleId)) > 0:
-                                        inputsInOtherLevel.append(element)
-
-        # node to module
-        if outputsInOtherLevel:
-            for d in outputsInOtherLevel:
-                newTo = []
-                nodeFrom = d['from']
-                nodeTo = d['to']
-                if self.getNode(nodeTo).isin in self.nodeDic:
-                    newTo = self.getParentModule(nodeTo, modulesInLevel)
-                if newTo:
-                    element = {'from': nodeFrom, 'to': newTo}
-                    if self.getNode(nodeFrom).nodeInfo.showOutputs and self.getNode(newTo).nodeInfo.showInputs:
-                        if self.existArrow(element['from'], element['to'], res) == False:
-                            res.append(element)
-
-        # module to node
-        if inputsInOtherLevel:
-            for d in inputsInOtherLevel:
-                newFrom = []
-                nodeFrom = d['from']
-                nodeTo = d['to']
-                if self.getNode(nodeFrom).isin in self.nodeDic:
-                    newFrom = self.getParentModule(nodeFrom, modulesInLevel)
-                if newFrom:
-                    element = {'from': newFrom, 'to': nodeTo}
-                    if self.getNode(newFrom).nodeInfo.showOutputs and self.getNode(nodeTo).nodeInfo.showInputs:
-                        if self.existArrow(element['from'], element['to'], res) == False:
-                            res.append(element)
-
-        # module to module
-        modulesComplete = []
-        for mod in modulesInLevel:
-            modulesComplete.append(
-                {'module': mod, 'nodes': self.getNodesInModule(mod, [])})
-
-        for mod in modulesComplete:
-            for node in mod['nodes']:
-                if self.getNode(mod['module']).nodeInfo.showOutputs:
-                    tempOutputs = node.outputs
-                    if tempOutputs:
-                        for output in tempOutputs:
-                            for auxModule in modulesComplete:
-                                if(mod['module'] != auxModule['module'] and self.getNode(auxModule['module']).nodeInfo.showInputs):
-                                    # module to module
-                                    if self.getNode(output) in auxModule['nodes']:
-                                        element = {
-                                            'from': mod['module'], 'to': auxModule['module']}
-                                        if self.existArrow(element['from'], element['to'], res) == False:
-                                            res.append(element)
-                                """# module to alias
-                                aliases = self.getAliasInLevel(
-                                    output, moduleId)
-                                if len(aliases) > 0:
-                                    for alias in aliases:
-                                        if alias.nodeInfo.showInputs:
-                                            element = {
-                                                "from": mod["module"], "to": alias.identifier}
-                                            if self.existArrow(element["from"], element["to"], res) == False:
-                                                res.append(element)
-                                            # alias to alias
-                                            outputAliases = self.getAliasInLevel(
-                                                node.identifier, moduleId)
-                                            if len(outputAliases) > 0:
-                                                for outAl in outputAliases:
-                                                    if outAl.nodeInfo.showOutputs:
-                                                        element = {
-                                                            "from": outAl.identifier, "to": alias.identifier}
-                                                        if self.existArrow(element["from"], element["to"], res) == False:
-                                                            res.append(element)
-
-                # alias to module
-                if self.getNode(mod["module"]).nodeInfo.showInputs:
-                    tempInputs = node.inputs
-                    if tempInputs:
-                        for inp in tempInputs:
-                            aliases = self.getAliasInLevel(inp, moduleId)
-                            if len(aliases) > 0:
-                                for auxModule in modulesComplete:
-                                    for alias in aliases:
-                                        if alias.nodeInfo.showOutputs:
-                                            element = {
-                                                "from": alias.identifier, "to": mod["module"]}
-                                            if self.existArrow(element["from"], element["to"], res) == False:
-                                                res.append(element)"""
-
-        return res
-
-    def existArrow(self, aFrom, aTo, arrowsList):
-        """Return true if exists de arrow from-to"""
-        if arrowsList:
-            for arrow in arrowsList:
-                if arrow['from'] == aFrom and arrow['to'] == aTo:
-                    return True
-        return False
-
-    def getAliasInLevel(self, nodeIdentifier, levelId):
-        """Returns the aliases in the level"""
-        res = []
-        aliasNodes = self.findNodes('originalId', nodeIdentifier)
-        if aliasNodes is not None:
-            for alias in aliasNodes:
-                if alias.moduleId == levelId:
-                    res.append(alias)
-                    break
-        return res
-
-    def getParentModulesWithAlias(self, moduleId, modulesArray):
-        """Return the parent module with alias"""
-        if moduleId != '_model_':
-            if moduleId not in modulesArray:
-                modulesArray.append(moduleId)
-            alias = []
-            alias = self.findNodes('originalId', moduleId)
-            if alias:
-                for a in alias:
-                    if a.identifier not in modulesArray:
-                        modulesArray.append(a.identifier)
-            if self.getNode(moduleId).isin in self.nodeDic:
-                return self.getParentModulesWithAlias(self.getNode(moduleId).isin, modulesArray)
-            else:
-                return modulesArray
-        else:
-            return modulesArray
-
-    def getParentModule(self, moduleId, modulesInLevel):
-        """Return parent module"""
-        if moduleId == '_model_':
-            return None
-        else:
-            if moduleId in modulesInLevel:
-                return moduleId
-            else:
-                if self.getNode(moduleId).isin in self.nodeDic:
-                    return self.getParentModule(self.getNode(moduleId).isin, modulesInLevel)
-                else:
-                    return None
-
-    def getNodesInModule(self, moduleId, nodesInSubLevels):
-        """Return nodes un module"""
-
-        subLevelNodes = []
-        modulesInSubLevels = []
-        subLevelNodes = self.findNodes('moduleId', moduleId)
-        if subLevelNodes:
-            for node in subLevelNodes:
-                if node.nodeClass == 'module':
-                    modulesInSubLevels.append(node)
-                else:
-                    if node.nodeClass != 'text':
-                        nodesInSubLevels.append(node)
-
-            if modulesInSubLevels:
-                for module in modulesInSubLevels:
-                    self.getNodesInModule(module.identifier, nodesInSubLevels)
-
-        return nodesInSubLevels
-
-    # UNUSED FULL ARROWS (NODE TO NODE WITH ALIASES)
-    """
-    def getArrows(self,moduleId):
-        res=[]
-        thisLevel = self.findNodes("moduleId",moduleId)
-        thisIds = [node.identifier for node in thisLevel]
-        for nodeId in self.nodeDic:
-            if self.getNode(nodeId).nodeClass not in ["module","text"]:
-                nodeInputs = []
-                nodeOutputs = []
-                fullNode = []
-                fullInputs = []
-                fullOutputs = []
-                # To clear non existent aliases
-                if self.getNode(nodeId).originalId:
-                    if self.getNode(nodeId).originalId not in self.nodeDic:
-                        continue
-                nodeInputs = self.getNode(nodeId).inputs
-                nodeOutputs = self.getNode(nodeId).outputs
-                fullNode = self.getNodeParentsAndAliases(nodeId)
-                if fullNode:
-                    for n in fullNode:
-                        if n not in thisIds:
-                            fullNode.remove(n)
-                if fullNode:
-                    if nodeInputs:
-                        for i in nodeInputs:
-                            fullInputs = self.getNodeParentsAndAliases(i)
-                            if fullInputs:
-                                for n in fullInputs:
-                                    if n not in thisIds:
-                                        fullInputs.remove(n)
-                            if fullInputs:
-                                for n in fullNode:
-                                    for inp in fullInputs:
-                                        if self.getNode(n).nodeInfo.showInputs and self.getNode(inp).nodeInfo.showOutputs:
-                                            element = {"from":inp,"to":n}
-                                            if element not in res:
-                                                res.append(element)
-
-                    if nodeOutputs:
-                        for o in nodeOutputs:
-                            fullOutputs = self.getNodeParentsAndAliases(o)
-                            if fullOutputs:
-                                for n in fullOutputs:
-                                    if n not in fullOutputs:
-                                        fullOutputs.remove(n)
-                            if fullOutputs:
-                                for n in fullNode:
-                                    for out in fullOutputs:
-                                        if self.getNode(out).nodeInfo.showInputs and self.getNode(n).nodeInfo.showOutputs:
-                                            element = {"from":n,"to":out}
-                                            if element not in res:
-                                                res.append(element)
-
-        return res
-
-
-    def getNodeParentsAndAliases(self,nodeId):
-        response = []
-        aliases = []
-        parentModulesAndAliases = []
-        if nodeId not in response:
-            response.append(nodeId)
-        aliases = self.findNodes('originalId',nodeId)
-        if aliases:
-            for a in aliases:
-                if a.identifier not in response:
-                    response.append(a.identifier)
-        if self.getNode(nodeId).isin in self.nodeDic:
-            parentModulesAndAliases = self.getParentModulesWithAlias(
-                self.getNode(nodeId).isin,[])
-        if parentModulesAndAliases:
-            for m in parentModulesAndAliases:
-                if m not in response:
-                    response.append(m)
-        return response
-
-    """
+        return arrows_manager.get_arrows(module_id=module_id)
 
     def findNodes(self, prop, value):
         """Finds nodes by property/value"""

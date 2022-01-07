@@ -487,7 +487,11 @@ class BaseNode(object):
         """Calculate result of the node"""
 
         if not self.isCalc or self.nodeClass == "button" or self.nodeClass == "formnode":
+            isCircular_start_time = dt.datetime.now()
             nodeIsCircular = self.isCircular()
+            isCircular_end_time = dt.datetime.now()
+            self.lastEvaluationTime = (
+                isCircular_end_time - isCircular_start_time).total_seconds()
             if not self._bypassCircularEvaluator and nodeIsCircular:
                 circularNodes = self.getSortedCyclicDependencies()
 
@@ -605,7 +609,7 @@ class BaseNode(object):
                     self.postCalculate()
 
                     endTime = dt.datetime.now()
-                    self.lastEvaluationTime = (
+                    self.lastEvaluationTime += (
                         endTime - startTime).total_seconds() - self.lastLazyTime
                     if self.lastEvaluationTime < 0:
                         self.lastEvaluationTime = 0
@@ -721,10 +725,9 @@ class BaseNode(object):
         """
         Return list of nodes in circular dependencyes, sortered by execution order
         """
-        if self.isCircular():
-            full_imports = self.getFullInputs()
-            full_outputs = self.getFullOutputs()
-            return list(set(full_imports).intersection(full_outputs))
+        full_imports = self.getFullInputs()
+        full_outputs = self.getFullOutputs()
+        return list(set(full_imports).intersection(full_outputs))
 
     def profileNode(self, evaluated, response, evaluationVersion, profileParentId):
         """Perform node profile"""
