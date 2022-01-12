@@ -496,15 +496,27 @@ class Model(object):
 
     def setNodeProperties(self, nodeId, properties):
         """Update properties of a node"""
-        nodeId = self.clearId(nodeId)
-        if self.existNode(nodeId):
-            _node = self.getNode(nodeId)
+        node_id = self.clearId(nodeId)
+        if self.existNode(node_id):
+            node = self.getNode(node_id)
             for prop in properties:
                 if '.' in prop['name']:
-                    nodeProp, objProp = prop['name'].split('.')
-                    setattr(getattr(_node, nodeProp), objProp, prop['value'])
+                    node_prop, obj_prop = prop['name'].split('.')
+                    setattr(getattr(node, node_prop), obj_prop, prop['value'])
                 else:
-                    setattr(_node, prop['name'], prop['value'])
+                    setattr(node, prop['name'], prop['value'])
+                if prop['name'] == 'definition':
+                    # Update isNodeCircular property
+                    is_circular = node.isCircular()
+                    if is_circular:
+                        circular_nodes_ids = node.getSortedCyclicDependencies()
+                        # Set all nodes in circle as circular
+                        for circular_node_id in circular_nodes_ids:
+                            circular_node = self.getNode(circular_node_id)
+                            setattr(circular_node, 'isNodeCircular', True)
+                    else:
+                        setattr(node, 'isNodeCircular', is_circular)
+
 
     def getNodeProperties(self, nodeProperties):
         """Get properties of a node"""
@@ -588,22 +600,23 @@ class Model(object):
         return res
     
     def get_arrows(self, module_id):
-        """
-        Returns a list of dicts of all arrows inside module_id
-        """
-        
+        """Returns a list of dicts of all arrows inside module_id"""
         arrows_manager = ArrowsManager(model=self)
 
         return arrows_manager.get_arrows(module_id=module_id)
 
     def findNodes(self, prop, value):
         """Finds nodes by property/value"""
-        res = []
-        for k, v in self.nodeDic.items():
-            if getattr(v, prop) == value:
-                if(not v.system):
-                    res.append(self.nodeDic[k])
-        return res
+        nodes = self.nodeDic.values()
+        if prop == 'moduleId':
+            return [node for node in nodes if node.moduleId == value and not node.system]
+        else:
+            res = []
+            for node in nodes:
+                if getattr(node, prop) == value:
+                    if not node.system and not node.nodeClass == 'interfaceapp':
+                        res.append(node)
+            return res
 
     def searchNodes(self, filterOptions):
         """Search nodes using filter options """
@@ -960,7 +973,7 @@ class Model(object):
         self.ensureModelLibraries()
 
         # apply backward compatibility
-        self.applyBackwardCompatibility()
+        self.applyBackwardCompatibility(file_name=fileName)
 
         # evaluate nodes on start
         try:
@@ -1080,18 +1093,40 @@ class Model(object):
             os.system(f'rm -rf {venv_path}')
             os.system(f'ln -s -f "{user_lib_path}" {venv_path}')
 
-    def applyBackwardCompatibility(self):
-        # update old selector definition
-        if self.existNode("selector"):
-            node = self.getNode("selector")
-            if node.nodeClass == "function" and "from pyplan_engine.classes.PyplanFunctions import Selector" in node.definition:
-                node.definition = "result = pp.selector"
+    def applyBackwardCompatibility(self, file_name: str = None):
+        # Update old selector definition
+        if self.existNode('selector'):
+            node = self.getNode('selector')
+            if node.nodeClass == 'function' and 'from pyplan_engine.classes.PyplanFunctions import Selector' in node.definition:
+                node.definition = 'result = pp.selector'
 
-        # check for cubepy in imports node
-        if self.existNode("imports"):
-            node = self.getNode("imports")
-            if "cubepy" in node.definition and not "cubepy" in sys.modules:
-                sys.modules["cubepy"] = cubepy
+        # Check for cubepy in imports node
+        if self.existNode('imports'):
+            node = self.getNode('imports')
+            if 'cubepy' in node.definition and not 'cubepy' in sys.modules:
+                sys.modules['cubepy'] = cubepy
+        
+        # Update _isNodeCircular property
+        EXCLUDED_CLASSES = ['text', 'button', 'alias']
+        n = 0
+        must_update = False
+        # Check some nodes to see if _isNodeCircular is not None
+        for node in self.nodeDic.values():
+            if not node.system and node.nodeClass not in EXCLUDED_CLASSES:
+                must_update = node._isNodeCircular is None
+                n += 1
+            if must_update or n == 10:
+                break
+        if must_update:
+            # Apply migration
+            for node_id in list(self.nodeDic):
+                if self.existNode(node_id):
+                    node = self.getNode(node_id)
+                    if not node.system and node.nodeClass not in EXCLUDED_CLASSES:
+                        node.isNodeCircular
+            # Save changes so that this happens only once
+            if file_name is not None and os.path.isfile(file_name):
+                self.saveModel(file_name)
 
     def isLinux(self):
         if platform == 'linux' or platform == 'linux2' or platform == 'darwin':

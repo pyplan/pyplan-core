@@ -5,24 +5,24 @@ import uuid
 from contextlib import redirect_stdout
 from sys import exc_info, getsizeof
 from types import CodeType
+from typing import Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-
-from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.dynamics.BaseDynamic import BaseDynamic
 from pyplan_core.classes.dynamics.FactoryDynamic import FactoryDynamic
-from pyplan_core.cubepy.Helpers import Helpers
+from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.IOEngine import IOEngine
 from pyplan_core.classes.NodeInfo import NodeInfo
 from pyplan_core.classes.PyplanFunctions import Selector
+from pyplan_core.cubepy.Helpers import Helpers
 
 
 class BaseNode(object):
 
     SERIALIZABLE_PROPERTIES = ['identifier', 'definition', 'title', 'nodeClass', 'moduleId', 'x', 'y', 'z', 'w', 'h',
-                               "description", "units", "color", "errorInDef", "nodeInfo", "nodeFont", "numberFormat", "originalId", "extraData", "picture", "evaluateOnStart"]
+                               'description', 'units', 'color', 'errorInDef', 'nodeInfo', 'nodeFont', 'numberFormat', 'originalId', 'extraData', 'picture', 'evaluateOnStart', 'isNodeCircular']
 
     FORMNODE_TYPE_CHECKBOX = 0
     FORMNODE_TYPE_COMBOBOX = 1
@@ -68,6 +68,7 @@ class BaseNode(object):
         self._hierarchy_maps = None
         self._releaseMemory = False
         self._evaluateOnStart = False
+        self._isNodeCircular = None
 
         # load default props by toolbar
         nodeFormat = model.getDefaultNodeFormat(self.nodeClass)
@@ -213,6 +214,16 @@ class BaseNode(object):
     @evaluateOnStart.setter
     def evaluateOnStart(self, value):
         self._evaluateOnStart = value
+    
+    @property
+    def isNodeCircular(self):
+        if self._isNodeCircular is None and not self.system and self.nodeClass not in ['text', 'button', 'alias']:
+            self._isNodeCircular = self.isCircular()
+        return self._isNodeCircular
+    
+    @isNodeCircular.setter
+    def isNodeCircular(self, value: Union[bool, None]):
+        self._isNodeCircular = value
 
     @property
     def resultType(self):
@@ -486,12 +497,8 @@ class BaseNode(object):
     def calculate(self, extraParams=None):
         """Calculate result of the node"""
 
-        if not self.isCalc or self.nodeClass == "button" or self.nodeClass == "formnode":
-            isCircular_start_time = dt.datetime.now()
-            nodeIsCircular = self.isCircular()
-            isCircular_end_time = dt.datetime.now()
-            self.lastEvaluationTime = (
-                isCircular_end_time - isCircular_start_time).total_seconds()
+        if not self.isCalc or self.nodeClass in ["button", "formnode"]:
+            nodeIsCircular = self.isNodeCircular
             if not self._bypassCircularEvaluator and nodeIsCircular:
                 circularNodes = self.getSortedCyclicDependencies()
 
@@ -609,7 +616,7 @@ class BaseNode(object):
                     self.postCalculate()
 
                     endTime = dt.datetime.now()
-                    self.lastEvaluationTime += (
+                    self.lastEvaluationTime = (
                         endTime - startTime).total_seconds() - self.lastLazyTime
                     if self.lastEvaluationTime < 0:
                         self.lastEvaluationTime = 0
@@ -670,21 +677,20 @@ class BaseNode(object):
         self._definition = newDef
 
     def isCircular(self):
-        """ Checks if the node is part of a cycle
-        """
-        _id = self.identifier if self.originalId is None else self.originalId
-        _inputNodes = [_id]
+        """Checks if the node is part of a cycle"""
+        node_id = self.identifier if self.originalId is None else self.originalId
+        input_nodes_ids = [node_id]
 
         nn = 0
-        while nn < len(_inputNodes):
-            _node = _inputNodes[nn]
-            if self.model.existNode(_node):
-                for _inputId in self.model.getNode(_node).ioEngine.inputs:
-                    if _inputId == _id:
+        while nn < len(input_nodes_ids):
+            node = input_nodes_ids[nn]
+            if self.model.existNode(node):
+                for input_node_id in self.model.getNode(node).ioEngine.inputs:
+                    if input_node_id == node_id:
                         return True
                     else:
-                        if not _inputId in _inputNodes:
-                            _inputNodes.append(_inputId)
+                        if not input_node_id in input_nodes_ids:
+                            input_nodes_ids.append(input_node_id)
             nn += 1
         return False
 
