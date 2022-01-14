@@ -520,30 +520,20 @@ class Model(object):
             del self.nodeDic[oldNodeId]
             return True
         return False
-
+    
     def setNodeProperties(self, nodeId, properties):
         """Update properties of a node"""
         node_id = self.clearId(nodeId)
         if self.existNode(node_id):
             node = self.getNode(node_id)
             for prop in properties:
-                if '.' in prop['name']:
-                    node_prop, obj_prop = prop['name'].split('.')
-                    setattr(getattr(node, node_prop), obj_prop, prop['value'])
-                else:
-                    setattr(node, prop['name'], prop['value'])
-                if prop['name'] == 'definition':
-                    # Update isNodeCircular property
-                    is_circular = node.isCircular()
-                    if is_circular:
-                        circular_nodes_ids = node.getSortedCyclicDependencies()
-                        # Set all nodes in circle as circular
-                        for circular_node_id in circular_nodes_ids:
-                            circular_node = self.getNode(circular_node_id)
-                            circular_node.isNodeCircular = True
-                    else:
-                        node.isNodeCircular = is_circular
-
+                prop_name = prop['name']
+                prop_value = prop['value']
+                if '.' in prop_name:
+                    node_prop, obj_prop = prop_name.split('.')
+                    node = getattr(node, node_prop)
+                    prop_name = obj_prop
+                setattr(node, prop_name, prop_value)
 
     def getNodeProperties(self, nodeProperties):
         """Get properties of a node"""
@@ -1000,7 +990,7 @@ class Model(object):
         self.ensureModelLibraries()
 
         # apply backward compatibility
-        self.applyBackwardCompatibility(file_name=fileName)
+        self.applyBackwardCompatibility()
 
         # evaluate nodes on start
         try:
@@ -1120,7 +1110,7 @@ class Model(object):
             os.system(f'rm -rf {venv_path}')
             os.system(f'ln -s -f "{user_lib_path}" {venv_path}')
 
-    def applyBackwardCompatibility(self, file_name: str = None):
+    def applyBackwardCompatibility(self):
         # Update old selector definition
         if self.existNode('selector'):
             node = self.getNode('selector')

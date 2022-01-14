@@ -22,7 +22,7 @@ from pyplan_core.cubepy.Helpers import Helpers
 class BaseNode(object):
 
     SERIALIZABLE_PROPERTIES = ['identifier', 'definition', 'title', 'nodeClass', 'moduleId', 'x', 'y', 'z', 'w', 'h',
-                               'description', 'units', 'color', 'errorInDef', 'nodeInfo', 'nodeFont', 'numberFormat', 'originalId', 'extraData', 'picture', 'evaluateOnStart', 'isNodeCircular']
+                               'description', 'units', 'color', 'errorInDef', 'nodeInfo', 'nodeFont', 'numberFormat', 'originalId', 'extraData', 'picture', 'evaluateOnStart', '_isNodeCircular']
 
     FORMNODE_TYPE_CHECKBOX = 0
     FORMNODE_TYPE_COMBOBOX = 1
@@ -214,13 +214,13 @@ class BaseNode(object):
     @evaluateOnStart.setter
     def evaluateOnStart(self, value):
         self._evaluateOnStart = value
-    
+
     @property
     def isNodeCircular(self):
         if self._isNodeCircular is None and not self.system and self.nodeClass not in ['text', 'button', 'alias', 'module']:
             self._isNodeCircular = self.isCircular()
         return self._isNodeCircular
-    
+
     @isNodeCircular.setter
     def isNodeCircular(self, value: Union[bool, None]):
         self._isNodeCircular = value
@@ -277,13 +277,7 @@ class BaseNode(object):
     def definition(self, value):
         if not self.model.isLoadingModel:
             value = self.sanitizeDefinition(value)
-
-        self._definition = value
-        if not self.model.isLoadingModel:
-            self.invalidate()
-            self.generateIO()
-
-        self._isCalc = False
+        self.setDefinitionWithCircularCheck(value)
 
     @property
     def identifier(self):
@@ -293,7 +287,7 @@ class BaseNode(object):
     def identifier(self, value):
         if value != self._identifier:
             if self._model.existNode(value):
-                raise ValueError("'The id '" + value + "' already exists")
+                raise ValueError(f"The id '{value}' already exists")
 
             if self.isCalc:
                 self.invalidate()
@@ -520,7 +514,8 @@ class BaseNode(object):
             else:
                 from_circular_evaluator = self._bypassCircularEvaluator
 
-                self.model.sendStartCalcNode(self.identifier, from_circular_evaluator)
+                self.model.sendStartCalcNode(
+                    self.identifier, from_circular_evaluator)
                 self.model.currentProcessingNode(self.identifier)
                 self._bypassCircularEvaluator = False
 
@@ -624,7 +619,8 @@ class BaseNode(object):
                 finally:
                     localRes["cp"].release()
                     localRes = None
-                    self.model.sendEndCalcNode(self.identifier, from_circular_evaluator)
+                    self.model.sendEndCalcNode(
+                        self.identifier, from_circular_evaluator)
         else:
             self._bypassCircularEvaluator = False
 
@@ -762,6 +758,45 @@ class BaseNode(object):
         if str(value).isnumeric():
             value = "result = " + str(value)
         return value
+
+    def setDefinitionWithCircularCheck(self, new_definition: str):
+        """Updates definition and isNodeCircular property of node"""
+        node_id = self.identifier
+        old_definition = self._definition
+        # Set definition so that it updates its IO
+        self.__setDefinition(new_definition, True)
+        if not self.model.isLoadingModel:
+            is_circular = self.isCircular()
+            # If node used to be circular but not anymore
+            if self._isNodeCircular and not is_circular:
+                # Set old definition to retrieve nodes in previous circle
+                self.__setDefinition(old_definition, False)
+                prev_circular_nodes_ids = self.getSortedCyclicDependencies()
+                # Set back new definition
+                self.__setDefinition(new_definition, False)
+                # Update isNodeCircular for previous circular nodes
+                for prev_circular_node_id in prev_circular_nodes_ids:
+                    if prev_circular_node_id != node_id:
+                        prev_circular_node = self.model.getNode(
+                            prev_circular_node_id)
+                        prev_circular_node.isNodeCircular = prev_circular_node.isCircular()
+            if is_circular:
+                circular_nodes_ids = self.getSortedCyclicDependencies()
+                # Set all nodes in circle as circular
+                for circular_node_id in circular_nodes_ids:
+                    if circular_node_id != node_id:
+                        circular_node = self.model.getNode(circular_node_id)
+                        circular_node.isNodeCircular = True
+            self.isNodeCircular = is_circular
+
+    def __setDefinition(self, new_definition: str, invalidate: bool = True):
+        """Updates definition, invalidates node and generates inputs and ouputs"""
+        self._definition = new_definition
+        if not self.model.isLoadingModel:
+            if invalidate:
+                self.invalidate()
+            self.generateIO()
+        self._isCalc = False
 
     def getDefaultDefinitionByClass(self, nodeClass):
         """Return default definition by node class"""
