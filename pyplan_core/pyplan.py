@@ -69,7 +69,7 @@ class Pyplan(object):
         arr = []
         if not module_id:
             module_id = self.model.modelNode.identifier
-        for node in self.model.findNodes("moduleId",module_id):
+        for node in self.model.findNodesInModule(module_id):
             if not node.nodeClass in ["text","alias","inputnode"] and not node.identifier in ["pyplan_library"]: 
                 arr.append([node.identifier, node.title, node.nodeClass, node.moduleId])
             

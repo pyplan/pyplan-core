@@ -25,8 +25,7 @@ class PureXArrayDynamic(BaseDynamic):
             for circular_node_id in nodesInCyclic:
                 circular_node = node.model.getNode(circular_node_id)
                 if not circular_node is None:
-                    circular_node.sendStartCalcNode(
-                        fromDynamic=node.identifier)
+                    node.model.sendStartCalcNode(circular_node_id, fromDynamic=node.identifier)
 
         # create nodes array
         cyclicNodes = []
@@ -238,7 +237,7 @@ class PureXArrayDynamic(BaseDynamic):
             for circular_node_id in nodesInCyclic:
                 circular_node = node.model.getNode(circular_node_id)
                 if not circular_node is None:
-                    circular_node.sendEndCalcNode(fromDynamic=node.identifier)
+                    node.model.sendEndCalcNode(circular_node_id, fromDynamic=node.identifier)
 
         evaluate = None
         model = None

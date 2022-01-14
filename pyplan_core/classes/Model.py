@@ -11,6 +11,7 @@ from shlex import split
 from site import getsitepackages
 from sys import platform
 from time import sleep
+from typing import Union
 
 import jsonpickle
 import numpy
@@ -60,6 +61,7 @@ class Model(object):
         self.session_key = None
         self.debugMode = None
         self.WS = WSClass
+        self.evaluationTime = 0
 
     # Props
 
@@ -144,7 +146,7 @@ class Model(object):
                 if self.existNode(nodeId) and nodeId != '_model_':
                     # check for module
                     if self.getNode(nodeId).nodeClass == 'module':
-                        childs = self.findNodes('moduleId', nodeId)
+                        childs = self.findNodesInModule(nodeId)
                         childsIds = [c.identifier for c in childs]
                         self.deleteNodes(childsIds, removeAliasIfNotIn)
 
@@ -211,7 +213,7 @@ class Model(object):
         while options > 0:
             options -= 1
             found = False
-            for node in self.findNodes('moduleId', moduleId):
+            for node in self.findNodesInModule(moduleId):
                 if node.nodeClass != "text":
                     l2x = int(node.x)
                     l2y = int(node.y)
@@ -266,6 +268,7 @@ class Model(object):
         """Perform preview of a node"""
         try:
             result = None
+            self.evaluationTime = 0
             if self.existNode(nodeId):
                 if debugMode:
                     self.debugMode = debugMode
@@ -299,6 +302,30 @@ class Model(object):
             if self.debugMode and self.ws:
                 self.ws.sendDebugInfo("endPreview", "", "endPreview")
             self.debugMode = None
+    
+    def sendStartCalcNode(self, node_id: str, fromCircularEvaluator: bool = False, fromDynamic: str = ''):
+        if self.existNode(node_id) and self.debugMode and not node_id in ['__evalnode__', 'dynamic'] and not fromCircularEvaluator and self.ws:
+            node = self.getNode(node_id)
+            self.ws.sendDebugInfo(
+                node_id, node.title if node.title else '', 'startCalc', fromDynamic=fromDynamic)
+
+    def sendEndCalcNode(self, node_id: str, fromCircularEvaluator: bool = False, fromDynamic: str = ''):
+        if self.existNode(node_id) and self.debugMode and not node_id in ['__evalnode__', 'dynamic'] and not fromCircularEvaluator and self.ws:
+            node = self.getNode(node_id)
+            node_last_eval_time = max(0, node.lastEvaluationTime)
+            self.evaluationTime += node_last_eval_time
+            resources = None
+            try:
+                resources = self.getSystemResources(onlyMemory=True)
+            except:
+                resources = {
+                    'usedMemory': 0,
+                    'totalMemory': 0
+                }
+            resources['cumulativeTime'] = self.evaluationTime
+
+            self.ws.sendDebugInfo(
+                node_id, node.title if node.title else '', 'endCalc', node_last_eval_time, resources['usedMemory'], resources['totalMemory'], resources['maxMemory'], resources['cumulativeTime'], fromDynamic=fromDynamic)
 
     def getCubeValues(self, query):
         """Evaluate node. Used for pivotgrid"""
@@ -372,7 +399,7 @@ class Model(object):
         nodeList.sort(key=lambda x: int(x.z))
         for node in nodeList:
             exceptions = ['definition'] if node.nodeClass == 'text' else [
-                'definition', 'description']
+                'definition', 'description', 'isNodeCircular']
             res['nodes'].append(node.toObj(
                 exceptions=exceptions, fillDefaultProperties=True))
         return res
@@ -485,7 +512,7 @@ class Model(object):
         """Update node identifier on all dictionary."""
         if self.existNode(oldNodeId):
             self.nodeDic[newNodeId] = self.nodeDic[oldNodeId]
-            for node in self.findNodes('moduleId', oldNodeId):
+            for node in self.findNodesInModule(oldNodeId):
                 node.moduleId = newNodeId
             for node in self.findNodes('originalId', oldNodeId):
                 node.originalId = newNodeId
@@ -513,9 +540,9 @@ class Model(object):
                         # Set all nodes in circle as circular
                         for circular_node_id in circular_nodes_ids:
                             circular_node = self.getNode(circular_node_id)
-                            setattr(circular_node, 'isNodeCircular', True)
+                            circular_node.isNodeCircular = True
                     else:
-                        setattr(node, 'isNodeCircular', is_circular)
+                        node.isNodeCircular = is_circular
 
 
     def getNodeProperties(self, nodeProperties):
@@ -605,18 +632,18 @@ class Model(object):
 
         return arrows_manager.get_arrows(module_id=module_id)
 
-    def findNodes(self, prop, value):
+    def findNodes(self, prop: str, value: Union[str, int, float]):
         """Finds nodes by property/value"""
-        nodes = self.nodeDic.values()
-        if prop == 'moduleId':
-            return [node for node in nodes if node.moduleId == value and not node.system]
-        else:
-            res = []
-            for node in nodes:
-                if getattr(node, prop) == value:
-                    if not node.system and not node.nodeClass == 'interfaceapp':
-                        res.append(node)
-            return res
+        res = []
+        for node in self.nodeDic.values():
+            if getattr(node, prop) == value:
+                if not node.system and not node.nodeClass == 'interfaceapp':
+                    res.append(node)
+        return res
+    
+    def findNodesInModule(self, module_id: str):
+        """Returns list of nodes inside module_id"""
+        return [node for node in self.nodeDic.values() if node.moduleId == module_id and not node.system]
 
     def searchNodes(self, filterOptions):
         """Search nodes using filter options """
@@ -698,7 +725,7 @@ class Model(object):
 
                             if nodeObj.nodeClass == 'module':
                                 _childrens = [
-                                    node.identifier for node in self.findNodes('moduleId', nodeId)]
+                                    node.identifier for node in self.findNodesInModule(nodeId)]
                                 nodeCreator(_childrens, newId)
 
                 nodeCreator(nodeList, moduleId)
@@ -1105,28 +1132,6 @@ class Model(object):
             node = self.getNode('imports')
             if 'cubepy' in node.definition and not 'cubepy' in sys.modules:
                 sys.modules['cubepy'] = cubepy
-        
-        # Update _isNodeCircular property
-        EXCLUDED_CLASSES = ['text', 'button', 'alias']
-        n = 0
-        must_update = False
-        # Check some nodes to see if _isNodeCircular is not None
-        for node in self.nodeDic.values():
-            if not node.system and node.nodeClass not in EXCLUDED_CLASSES:
-                must_update = node._isNodeCircular is None
-                n += 1
-            if must_update or n == 10:
-                break
-        if must_update:
-            # Apply migration
-            for node_id in list(self.nodeDic):
-                if self.existNode(node_id):
-                    node = self.getNode(node_id)
-                    if not node.system and node.nodeClass not in EXCLUDED_CLASSES:
-                        node.isNodeCircular
-            # Save changes so that this happens only once
-            if file_name is not None and os.path.isfile(file_name):
-                self.saveModel(file_name)
 
     def isLinux(self):
         if platform == 'linux' or platform == 'linux2' or platform == 'darwin':

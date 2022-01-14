@@ -217,7 +217,7 @@ class BaseNode(object):
     
     @property
     def isNodeCircular(self):
-        if self._isNodeCircular is None and not self.system and self.nodeClass not in ['text', 'button', 'alias']:
+        if self._isNodeCircular is None and not self.system and self.nodeClass not in ['text', 'button', 'alias', 'module']:
             self._isNodeCircular = self.isCircular()
         return self._isNodeCircular
     
@@ -520,7 +520,7 @@ class BaseNode(object):
             else:
                 from_circular_evaluator = self._bypassCircularEvaluator
 
-                self.sendStartCalcNode(from_circular_evaluator)
+                self.model.sendStartCalcNode(self.identifier, from_circular_evaluator)
                 self.model.currentProcessingNode(self.identifier)
                 self._bypassCircularEvaluator = False
 
@@ -624,7 +624,7 @@ class BaseNode(object):
                 finally:
                     localRes["cp"].release()
                     localRes = None
-                    self.sendEndCalcNode(from_circular_evaluator)
+                    self.model.sendEndCalcNode(self.identifier, from_circular_evaluator)
         else:
             self._bypassCircularEvaluator = False
 
@@ -819,25 +819,6 @@ class BaseNode(object):
     def set_hierarchy(self, parents, maps):
         self._hierarchy_parents = parents
         self._hierarchy_maps = maps
-
-    def sendStartCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
-        if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
-            self._model.ws.sendDebugInfo(
-                self.identifier, self.title if self.title else "", "startCalc", fromDynamic=fromDynamic)
-
-    def sendEndCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
-        if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
-            resources = None
-            try:
-                resources = self.model.getSystemResources(onlyMemory=True)
-            except:
-                resources = {
-                    "usedMemory": 0,
-                    "totalMemory": 0
-                }
-
-            self._model.ws.sendDebugInfo(
-                self.identifier, self.title if self.title else "", "endCalc", self.lastEvaluationTime, resources["usedMemory"], resources["totalMemory"], resources["maxMemory"], fromDynamic=fromDynamic)
 
     # ***********************************
     # *** CYCLICK EVALUATOR  METHODS  ***
