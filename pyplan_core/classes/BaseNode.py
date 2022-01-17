@@ -493,7 +493,11 @@ class BaseNode(object):
         """Calculate result of the node"""
 
         if not self.isCalc or self.nodeClass in ["button", "formnode"]:
+            is_circular_start_time = dt.datetime.now()
             nodeIsCircular = self.isNodeCircular
+            is_circular_end_time = dt.datetime.now()
+            self.lastEvaluationTime = (
+                        is_circular_end_time - is_circular_start_time).total_seconds()
             if not self._bypassCircularEvaluator and nodeIsCircular:
                 circularNodes = self.getSortedCyclicDependencies()
 
@@ -611,7 +615,7 @@ class BaseNode(object):
                     self.postCalculate()
 
                     endTime = dt.datetime.now()
-                    self.lastEvaluationTime = (
+                    self.lastEvaluationTime += (
                         endTime - startTime).total_seconds() - self.lastLazyTime
                     if self.lastEvaluationTime < 0:
                         self.lastEvaluationTime = 0
