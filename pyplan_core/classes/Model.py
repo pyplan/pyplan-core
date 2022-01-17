@@ -302,7 +302,7 @@ class Model(object):
             if self.debugMode and self.ws:
                 self.ws.sendDebugInfo("endPreview", "", "endPreview")
             self.debugMode = None
-    
+
     def sendStartCalcNode(self, node_id: str, fromCircularEvaluator: bool = False, fromDynamic: str = ''):
         if self.existNode(node_id) and self.debugMode and not node_id in ['__evalnode__', 'dynamic'] and not fromCircularEvaluator and self.ws:
             node = self.getNode(node_id)
@@ -520,7 +520,7 @@ class Model(object):
             del self.nodeDic[oldNodeId]
             return True
         return False
-    
+
     def setNodeProperties(self, nodeId, properties):
         """Update properties of a node"""
         node_id = self.clearId(nodeId)
@@ -615,7 +615,7 @@ class Model(object):
             evaluator = Evaluator.createInstance(self.nodeDic[nodeId].result)
             res = evaluator.isTable(self.getNode(nodeId))
         return res
-    
+
     def get_arrows(self, module_id):
         """Returns a list of dicts of all arrows inside module_id"""
         arrows_manager = ArrowsManager(model=self)
@@ -630,7 +630,7 @@ class Model(object):
                 if not node.system and not node.nodeClass == 'interfaceapp':
                     res.append(node)
         return res
-    
+
     def findNodesInModule(self, module_id: str):
         """Returns list of nodes inside module_id"""
         return [node for node in self.nodeDic.values() if node.moduleId == module_id and not node.system]
@@ -1149,11 +1149,11 @@ class Model(object):
 
         return jsonpickle.encode(profile)
 
-    def evaluate(self, definition, params=None, returnEvaluateTime=False):
+    def evaluate(self, definition, params=None, returnEvaluateTime: bool = False, fromDynamic: bool = False):
         """Evaluate expression"""
         res = None
         evalNode = BaseNode(
-            model=self, identifier='__evalnode__', nodeClass='variable')
+            model=self, identifier='__evalnode__', nodeClass='variable', isDynamicNode=fromDynamic)
         evalNode._definition = definition
         evalNode.calculate(params)
         res = evalNode.result

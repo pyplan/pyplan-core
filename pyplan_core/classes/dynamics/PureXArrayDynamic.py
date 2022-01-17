@@ -88,11 +88,11 @@ class PureXArrayDynamic(BaseDynamic):
             _id = _node["node"].identifier
 
             cyclicDic[_id] = evaluate(
-                _node["initialize"], returnEvaluateTime=False)
+                _node["initialize"], returnEvaluateTime=False, fromDynamic=True)
 
             if not initialValues is None and _id in initialValues:
                 initial_result = evaluate(
-                    initialValues[_id], returnEvaluateTime=False)
+                    initialValues[_id], returnEvaluateTime=False, fromDynamic=True)
                 cyclicDic[_id] = cyclicDic[_id] + initial_result
             # check align
             if cyclicDic[_id].dims[0] != dynamicIndex.name:
@@ -163,9 +163,9 @@ class PureXArrayDynamic(BaseDynamic):
                     try:
                         # use initial values
                         _resultNode = evaluate(
-                            _node["loopDefinition"], cyclicParams, False)
+                            _node["loopDefinition"], cyclicParams, False, fromDynamic=True)
                         _initialValues = evaluate(
-                            initialValues[_id], returnEvaluateTime=False)
+                            initialValues[_id], returnEvaluateTime=False, fromDynamic=True)
                     except Exception as ex:
                         raise ValueError(
                             f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")
@@ -185,7 +185,7 @@ class PureXArrayDynamic(BaseDynamic):
                     try:
                         # dont use use initial values
                         _resultNode = evaluate(
-                            _node["loopDefinition"], cyclicParams, False)
+                            _node["loopDefinition"], cyclicParams, False, fromDynamic=True)
                     except Exception as ex:
                         raise ValueError(
                             f"Node '{_id}' failed during dynamic evaluation. Error: {ex}")

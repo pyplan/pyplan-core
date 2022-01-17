@@ -29,7 +29,7 @@ class BaseNode(object):
     FORMNODE_TYPE_SCALAR = 2
     FORMNODE_TYPE_BUTTON = 3
 
-    def __init__(self, model, identifier=None, nodeClass=None, moduleId=None, x=None, y=None, originalId=None):
+    def __init__(self, model, identifier=None, nodeClass=None, moduleId=None, x=None, y=None, originalId=None, isDynamicNode=None):
         self._model = model
         self._originalId = originalId
         self._result = None
@@ -69,6 +69,7 @@ class BaseNode(object):
         self._releaseMemory = False
         self._evaluateOnStart = False
         self._isNodeCircular = None
+        self.isDynamicNode = isDynamicNode
 
         # load default props by toolbar
         nodeFormat = model.getDefaultNodeFormat(self.nodeClass)
@@ -606,7 +607,6 @@ class BaseNode(object):
                             else:
                                 raise ValueError(
                                     "The result was not found. Did you forget to include the text 'result =' ?")
-
                     self._isCalc = self.nodeClass != "button"
                     self.postCalculate()
 
@@ -792,7 +792,7 @@ class BaseNode(object):
     def __setDefinition(self, new_definition: str, invalidate: bool = True):
         """Updates definition, invalidates node and generates inputs and ouputs"""
         self._definition = new_definition
-        if not self.model.isLoadingModel:
+        if not self.model.isLoadingModel and not self.isDynamicNode:
             if invalidate:
                 self.invalidate()
             self.generateIO()
