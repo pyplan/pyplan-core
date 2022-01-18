@@ -26,7 +26,7 @@ class IOModule(object):
             toSave["nodeList"].append(modelObj)
 
             def iterateNodes(subModuleId, toSave):
-                for node in self.model.findNodes("moduleId", subModuleId):
+                for node in self.model.findNodesInModule(subModuleId):
                     if(not node.system):
                         toSave["nodeList"].append(node.toObj())
                         if node.nodeClass == "module":

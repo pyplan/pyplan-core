@@ -5,31 +5,31 @@ import uuid
 from contextlib import redirect_stdout
 from sys import exc_info, getsizeof
 from types import CodeType
+from typing import Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-
-from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.dynamics.BaseDynamic import BaseDynamic
 from pyplan_core.classes.dynamics.FactoryDynamic import FactoryDynamic
-from pyplan_core.cubepy.Helpers import Helpers
+from pyplan_core.classes.evaluators.Evaluator import Evaluator
 from pyplan_core.classes.IOEngine import IOEngine
 from pyplan_core.classes.NodeInfo import NodeInfo
 from pyplan_core.classes.PyplanFunctions import Selector
+from pyplan_core.cubepy.Helpers import Helpers
 
 
 class BaseNode(object):
 
     SERIALIZABLE_PROPERTIES = ['identifier', 'definition', 'title', 'nodeClass', 'moduleId', 'x', 'y', 'z', 'w', 'h',
-                               "description", "units", "color", "errorInDef", "nodeInfo", "nodeFont", "numberFormat", "originalId", "extraData", "picture", "evaluateOnStart"]
+                               'description', 'units', 'color', 'errorInDef', 'nodeInfo', 'nodeFont', 'numberFormat', 'originalId', 'extraData', 'picture', 'evaluateOnStart', '_isNodeCircular']
 
     FORMNODE_TYPE_CHECKBOX = 0
     FORMNODE_TYPE_COMBOBOX = 1
     FORMNODE_TYPE_SCALAR = 2
     FORMNODE_TYPE_BUTTON = 3
 
-    def __init__(self, model, identifier=None, nodeClass=None, moduleId=None, x=None, y=None, originalId=None):
+    def __init__(self, model, identifier=None, nodeClass=None, moduleId=None, x=None, y=None, originalId=None, isDynamicNode=None):
         self._model = model
         self._originalId = originalId
         self._result = None
@@ -68,6 +68,8 @@ class BaseNode(object):
         self._hierarchy_maps = None
         self._releaseMemory = False
         self._evaluateOnStart = False
+        self._isNodeCircular = None
+        self.isDynamicNode = isDynamicNode
 
         # load default props by toolbar
         nodeFormat = model.getDefaultNodeFormat(self.nodeClass)
@@ -215,6 +217,16 @@ class BaseNode(object):
         self._evaluateOnStart = value
 
     @property
+    def isNodeCircular(self):
+        if self._isNodeCircular is None and not self.system and self.nodeClass not in ['text', 'button', 'alias', 'module']:
+            self._isNodeCircular = self.isCircular()
+        return self._isNodeCircular
+
+    @isNodeCircular.setter
+    def isNodeCircular(self, value: Union[bool, None]):
+        self._isNodeCircular = value
+
+    @property
     def resultType(self):
         if self._isCalc:
             return str(type(self.result))
@@ -266,13 +278,7 @@ class BaseNode(object):
     def definition(self, value):
         if not self.model.isLoadingModel:
             value = self.sanitizeDefinition(value)
-
-        self._definition = value
-        if not self.model.isLoadingModel:
-            self.invalidate()
-            self.generateIO()
-
-        self._isCalc = False
+        self.setDefinitionWithCircularCheck(value)
 
     @property
     def identifier(self):
@@ -282,7 +288,7 @@ class BaseNode(object):
     def identifier(self, value):
         if value != self._identifier:
             if self._model.existNode(value):
-                raise ValueError("'The id '" + value + "' already exists")
+                raise ValueError(f"The id '{value}' already exists")
 
             if self.isCalc:
                 self.invalidate()
@@ -486,8 +492,12 @@ class BaseNode(object):
     def calculate(self, extraParams=None):
         """Calculate result of the node"""
 
-        if not self.isCalc or self.nodeClass == "button" or self.nodeClass == "formnode":
-            nodeIsCircular = self.isCircular()
+        if not self.isCalc or self.nodeClass in ["button", "formnode"]:
+            is_circular_start_time = dt.datetime.now()
+            nodeIsCircular = self.isNodeCircular
+            is_circular_end_time = dt.datetime.now()
+            self.lastEvaluationTime = (
+                        is_circular_end_time - is_circular_start_time).total_seconds()
             if not self._bypassCircularEvaluator and nodeIsCircular:
                 circularNodes = self.getSortedCyclicDependencies()
 
@@ -509,7 +519,8 @@ class BaseNode(object):
             else:
                 from_circular_evaluator = self._bypassCircularEvaluator
 
-                self.sendStartCalcNode(from_circular_evaluator)
+                self.model.sendStartCalcNode(
+                    self.identifier, from_circular_evaluator)
                 self.model.currentProcessingNode(self.identifier)
                 self._bypassCircularEvaluator = False
 
@@ -600,12 +611,11 @@ class BaseNode(object):
                             else:
                                 raise ValueError(
                                     "The result was not found. Did you forget to include the text 'result =' ?")
-
                     self._isCalc = self.nodeClass != "button"
                     self.postCalculate()
 
                     endTime = dt.datetime.now()
-                    self.lastEvaluationTime = (
+                    self.lastEvaluationTime += (
                         endTime - startTime).total_seconds() - self.lastLazyTime
                     if self.lastEvaluationTime < 0:
                         self.lastEvaluationTime = 0
@@ -613,7 +623,8 @@ class BaseNode(object):
                 finally:
                     localRes["cp"].release()
                     localRes = None
-                    self.sendEndCalcNode(from_circular_evaluator)
+                    self.model.sendEndCalcNode(
+                        self.identifier, from_circular_evaluator)
         else:
             self._bypassCircularEvaluator = False
 
@@ -666,21 +677,20 @@ class BaseNode(object):
         self._definition = newDef
 
     def isCircular(self):
-        """ Checks if the node is part of a cycle
-        """
-        _id = self.identifier if self.originalId is None else self.originalId
-        _inputNodes = [_id]
+        """Checks if the node is part of a cycle"""
+        node_id = self.identifier if self.originalId is None else self.originalId
+        input_nodes_ids = [node_id]
 
         nn = 0
-        while nn < len(_inputNodes):
-            _node = _inputNodes[nn]
-            if self.model.existNode(_node):
-                for _inputId in self.model.getNode(_node).ioEngine.inputs:
-                    if _inputId == _id:
+        while nn < len(input_nodes_ids):
+            node = input_nodes_ids[nn]
+            if self.model.existNode(node):
+                for input_node_id in self.model.getNode(node).ioEngine.inputs:
+                    if input_node_id == node_id:
                         return True
                     else:
-                        if not _inputId in _inputNodes:
-                            _inputNodes.append(_inputId)
+                        if not input_node_id in input_nodes_ids:
+                            input_nodes_ids.append(input_node_id)
             nn += 1
         return False
 
@@ -721,10 +731,9 @@ class BaseNode(object):
         """
         Return list of nodes in circular dependencyes, sortered by execution order
         """
-        if self.isCircular():
-            full_imports = self.getFullInputs()
-            full_outputs = self.getFullOutputs()
-            return list(set(full_imports).intersection(full_outputs))
+        full_imports = self.getFullInputs()
+        full_outputs = self.getFullOutputs()
+        return list(set(full_imports).intersection(full_outputs))
 
     def profileNode(self, evaluated, response, evaluationVersion, profileParentId):
         """Perform node profile"""
@@ -753,6 +762,45 @@ class BaseNode(object):
         if str(value).isnumeric():
             value = "result = " + str(value)
         return value
+
+    def setDefinitionWithCircularCheck(self, new_definition: str):
+        """Updates definition and isNodeCircular property of node"""
+        node_id = self.identifier
+        old_definition = self._definition
+        # Set definition so that it updates its IO
+        self.__setDefinition(new_definition, True)
+        if not self.model.isLoadingModel:
+            is_circular = self.isCircular()
+            # If node used to be circular but not anymore
+            if self._isNodeCircular and not is_circular:
+                # Set old definition to retrieve nodes in previous circle
+                self.__setDefinition(old_definition, False)
+                prev_circular_nodes_ids = self.getSortedCyclicDependencies()
+                # Set back new definition
+                self.__setDefinition(new_definition, False)
+                # Update isNodeCircular for previous circular nodes
+                for prev_circular_node_id in prev_circular_nodes_ids:
+                    if prev_circular_node_id != node_id:
+                        prev_circular_node = self.model.getNode(
+                            prev_circular_node_id)
+                        prev_circular_node.isNodeCircular = prev_circular_node.isCircular()
+            if is_circular:
+                circular_nodes_ids = self.getSortedCyclicDependencies()
+                # Set all nodes in circle as circular
+                for circular_node_id in circular_nodes_ids:
+                    if circular_node_id != node_id:
+                        circular_node = self.model.getNode(circular_node_id)
+                        circular_node.isNodeCircular = True
+            self.isNodeCircular = is_circular
+
+    def __setDefinition(self, new_definition: str, invalidate: bool = True):
+        """Updates definition, invalidates node and generates inputs and ouputs"""
+        self._definition = new_definition
+        if not self.model.isLoadingModel and not self.isDynamicNode:
+            if invalidate:
+                self.invalidate()
+            self.generateIO()
+        self._isCalc = False
 
     def getDefaultDefinitionByClass(self, nodeClass):
         """Return default definition by node class"""
@@ -810,25 +858,6 @@ class BaseNode(object):
     def set_hierarchy(self, parents, maps):
         self._hierarchy_parents = parents
         self._hierarchy_maps = maps
-
-    def sendStartCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
-        if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
-            self._model.ws.sendDebugInfo(
-                self.identifier, self.title if self.title else "", "startCalc", fromDynamic=fromDynamic)
-
-    def sendEndCalcNode(self, fromCircularEvaluator=False, fromDynamic=''):
-        if self.model.debugMode and not self.identifier in ["__evalnode__", "dynamic"] and not fromCircularEvaluator and self._model.ws:
-            resources = None
-            try:
-                resources = self.model.getSystemResources(onlyMemory=True)
-            except:
-                resources = {
-                    "usedMemory": 0,
-                    "totalMemory": 0
-                }
-
-            self._model.ws.sendDebugInfo(
-                self.identifier, self.title if self.title else "", "endCalc", self.lastEvaluationTime, resources["usedMemory"], resources["totalMemory"], resources["maxMemory"], fromDynamic=fromDynamic)
 
     # ***********************************
     # *** CYCLICK EVALUATOR  METHODS  ***
